@@ -38,7 +38,10 @@ def health_check():
 # Include routers
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_PREFIX}/dashboard", tags=["dashboard"])
 app.include_router(habitations.router, prefix=f"{settings.API_V1_PREFIX}/habitations", tags=["habitations"])
-app.include_router(risk.router, prefix=f"{settings.API_V1_PREFIX}/risk", tags=["risk"])
+app.include_router(risk.router, prefix=f"{settings.API_V1_PREFIX}/risks", tags=["risks"])
 app.include_router(sites.router, prefix=f"{settings.API_V1_PREFIX}/sites", tags=["sites"])
-app.include_router(relocation.router, prefix=f"{settings.API_V1_PREFIX}/relocation", tags=["relocation"])
+app.include_router(relocation.router, prefix=f"{settings.API_V1_PREFIX}/relocation-plans", tags=["relocation-plans"])
 app.include_router(decisions.router, prefix=f"{settings.API_V1_PREFIX}/decisions", tags=["decisions"])
+
+from app.api.routes import map
+app.include_router(map.router, prefix=f"{settings.API_V1_PREFIX}/map", tags=["map"])

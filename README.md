@@ -6,71 +6,50 @@
 SIH26191 — Intelligent Identification of Hazard-Based Red Zones, Carrying Capacity Assessment, and Immediate Relocation Needs for Vulnerable Habitations.
 
 ## Architecture
-PUNARVAS is designed as a modular system with clear separation of concerns:
-- **Frontend**: React + Vite (Tailwind CSS for styling, Leaflet for maps)
-- **Backend**: FastAPI (Python) serving as the integration layer and REST API
-- **Database**: PostgreSQL (managed via SQLAlchemy ORM)
-- **AI/ML Engine**: Python-based risk assessment module (pandas, scikit-learn)
-- **Optimization Engine**: Relocation planning using Google OR-Tools
-
-## Technology Stack
-- Backend: Python 3.10+, FastAPI, SQLAlchemy, Pydantic, Uvicorn
-- Database: PostgreSQL, psycopg
-- Frontend: React, Vite, Tailwind CSS, Leaflet
-- AI/ML: Python, pandas, scikit-learn
-- Optimization: Google OR-Tools
-
-## Repository Structure
-```
-punarvas/
-├── backend/       # FastAPI application, database models, and core logic
-├── frontend/      # React application (UI/UX)
-├── ai-ml/         # Machine learning models, data preprocessing, and risk engine
-├── optimization/  # OR-Tools relocation logic and constraints
-└── docs/          # Architecture, API contracts, and database schema documentation
-```
+PUNARVAS is designed as a modular system:
+- **Frontend**: React + Vite
+- **Backend**: FastAPI (Python), SQLAlchemy 2.0, Pydantic v2
+- **Database**: PostgreSQL (psycopg, Alembic)
 
 ## How to Start the Backend
 
-1. **Navigate to the backend directory:**
-   ```bash
-   cd backend
-   ```
+### 1. Database Setup
+You need a running PostgreSQL instance.
+1. Create a database named `punarvas`.
+2. Create a database named `punarvas_test` (for testing).
 
-2. **Create a virtual environment and activate it:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment variables:**
-   Copy `.env.example` to `.env` and update the values, specifically the `DATABASE_URL`.
-   ```bash
-   cp .env.example .env
-   ```
-
-5. **Start the server:**
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-   The API will be available at `http://localhost:8000`.
-
-## How to Configure PostgreSQL
-1. Install PostgreSQL and start the service.
-2. Create a database named `punarvas`.
-3. Update the `DATABASE_URL` in the `backend/.env` file with your PostgreSQL credentials. Example: `postgresql+psycopg://username:password@localhost:5432/punarvas`
-
-## How to Run Tests
-From the `backend` directory, run:
+### 2. Environment Configuration
+Navigate to the `backend` directory and set up your virtual environment:
 ```bash
-pytest
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+Ensure `DATABASE_URL` in `.env` points to your active PostgreSQL instance (e.g., `postgresql+psycopg://postgres:password@localhost:5432/punarvas`).
+
+### 3. Run Database Migrations (Alembic)
+Initialize the database schema:
+```bash
+alembic upgrade head
 ```
 
-## Module Communication
-- The **Frontend** communicates with the Backend via RESTful API calls over HTTP/JSON.
-- The **AI/ML** and **Optimization** modules are developed as independent Python packages/scripts. The Backend will import and execute these modules or communicate with them as separate services depending on scaling needs.
+### 4. Seed the Database
+Populate the database with realistic demo data (Habitations, Sites, Risk Assessments, etc.):
+```bash
+PYTHONPATH=. python -m app.db.seed
+```
+
+### 5. Start the API
+```bash
+uvicorn app.main:app --reload
+```
+- API URL: `http://localhost:8000`
+- Swagger UI (Documentation & Testing): `http://localhost:8000/docs`
+
+### 6. Run Tests
+Tests are executed using `pytest` against the test database:
+```bash
+PYTHONPATH=. pytest
+```
