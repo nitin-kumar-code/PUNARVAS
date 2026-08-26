@@ -6,7 +6,9 @@ from app.optimization.schemas import (
     OptimizerAllocation,
     OptimizerRejectedSite,
     OptimizerOutput,
-    OptimizerStatus
+    OptimizerStatus,
+    OptimizerSiteStatus,
+    HazardExposureInfo
 )
 
 def get_example_optimizer_input() -> OptimizerInput:
@@ -34,7 +36,7 @@ def get_example_optimizer_input() -> OptimizerInput:
         healthcare_score=75.0,
         community_score=90.0,
         hazard_exposure=10.0,
-        status="ACTIVE"
+        status=OptimizerSiteStatus.ACTIVE
     )
     
     site2 = OptimizerCandidateSite(
@@ -50,7 +52,7 @@ def get_example_optimizer_input() -> OptimizerInput:
         healthcare_score=40.0,
         community_score=50.0,
         hazard_exposure=85.0,
-        status="ACTIVE"
+        status=OptimizerSiteStatus.ACTIVE
     )
     
     return OptimizerInput(source_habitation=hab, candidate_sites=[site1, site2])
@@ -67,7 +69,7 @@ def get_example_optimizer_output() -> OptimizerOutput:
     rejected = OptimizerRejectedSite(
         site_id=UUID("11111111-2222-3333-4444-555555555555"),
         reason="Hazard conflict: High flood risk",
-        hazard_exposure_info={"flood_risk": 85.0}
+        hazard_exposure_info=HazardExposureInfo(exposure=85.0)
     )
     
     return OptimizerOutput(
@@ -77,7 +79,7 @@ def get_example_optimizer_output() -> OptimizerOutput:
         allocated_population=500,
         uncovered_population=500,
         coverage_percentage=50.0,
-        status=OptimizerStatus.PARTIALLY_COVERED,
+        status=OptimizerStatus.INSUFFICIENT_CAPACITY,
         allocations=[alloc],
         rejected_sites=[rejected]
     )

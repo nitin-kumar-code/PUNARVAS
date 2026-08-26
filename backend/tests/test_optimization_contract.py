@@ -8,7 +8,9 @@ from app.optimization.schemas import (
     OptimizerAllocation,
     OptimizerRejectedSite,
     OptimizerOutput,
-    OptimizerStatus
+    OptimizerStatus,
+    OptimizerSiteStatus,
+    HazardExposureInfo
 )
 
 def test_valid_input():
@@ -39,7 +41,7 @@ def test_valid_input():
         healthcare_score=75.0,
         community_score=70.0,
         hazard_exposure=10.0,
-        status="ACTIVE"
+        status=OptimizerSiteStatus.ACTIVE
     )
     
     opt_input = OptimizerInput(source_habitation=hab, candidate_sites=[site])
@@ -78,7 +80,7 @@ def test_invalid_capacity():
             longitude=80.0,
             total_capacity=-50,
             available_capacity=0,
-            status="ACTIVE"
+            status=OptimizerSiteStatus.ACTIVE
         )
         
     with pytest.raises(ValidationError) as exc:
@@ -90,24 +92,23 @@ def test_invalid_capacity():
             longitude=80.0,
             total_capacity=500,
             available_capacity=600,
-            status="ACTIVE"
+            status=OptimizerSiteStatus.ACTIVE
         )
     assert "available_capacity cannot exceed total_capacity" in str(exc.value)
 
-def test_invalid_scores():
+@pytest.mark.parametrize("invalid_score", [-10.0, 105.0])
+def test_invalid_scores(invalid_score):
     with pytest.raises(ValidationError):
-        # Score > 100
         OptimizerHabitation(
             habitation_id=uuid4(),
             population=100,
             vulnerable_population=50,
             latitude=20.0,
             longitude=80.0,
-            risk_score=105.0
+            risk_score=invalid_score
         )
         
     with pytest.raises(ValidationError):
-        # Score < 0
         OptimizerCandidateSite(
             site_id=uuid4(),
             name="Test",
@@ -115,8 +116,8 @@ def test_invalid_scores():
             longitude=80.0,
             total_capacity=500,
             available_capacity=200,
-            safety_score=-10.0,
-            status="ACTIVE"
+            safety_score=invalid_score,
+            status=OptimizerSiteStatus.ACTIVE
         )
 
 def test_fully_covered_output():
@@ -176,7 +177,7 @@ def test_rejected_site_representation():
     rejected = OptimizerRejectedSite(
         site_id=site_id,
         reason="Hazard conflict",
-        hazard_exposure_info={"flood_risk": 95.0}
+        hazard_exposure_info=HazardExposureInfo(exposure=95.0)
     )
     
     out = OptimizerOutput(
@@ -193,4 +194,40 @@ def test_rejected_site_representation():
     
     assert len(out.rejected_sites) == 1
     assert out.rejected_sites[0].reason == "Hazard conflict"
-    assert out.rejected_sites[0].hazard_exposure_info["flood_risk"] == 95.0
+    assert out.rejected_sites[0].hazard_exposure_info.exposure == 95.0
+
+def test_invalid_output_invariants():
+    # Sum of allocated + uncovered != source
+    with pytest.raises(ValidationError):
+        OptimizerOutput(
+            source_habitation_id=uuid4(),
+            source_population=1000,
+            vulnerable_population=0,
+            allocated_population=500,
+            uncovered_population=0, # Incorrect, should be 500
+            coverage_percentage=50.0,
+            status=OptimizerStatus.INVALID_INPUT,
+            allocations=[],
+            rejected_sites=[]
+        )
+        
+    # sum of allocations.population != allocated_population
+    with pytest.raises(ValidationError):
+        alloc = OptimizerAllocation(
+            site_id=uuid4(),
+            population=200,
+            percentage=20.0,
+            distance_km=5.0,
+            site_score=95.0
+        )
+        OptimizerOutput(
+            source_habitation_id=uuid4(),
+            source_population=1000,
+            vulnerable_population=0,
+            allocated_population=500, # Matches uncovered below, but alloc object says 200
+            uncovered_population=500,
+            coverage_percentage=50.0,
+            status=OptimizerStatus.INVALID_INPUT,
+            allocations=[alloc],
+            rejected_sites=[]
+        )

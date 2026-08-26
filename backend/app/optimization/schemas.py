@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, model_validator
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field, model_validator, ConfigDict
+from typing import List, Optional
 from enum import Enum
 from uuid import UUID
 
@@ -10,7 +10,16 @@ class OptimizerStatus(str, Enum):
     NO_SAFE_SITE = "NO_SAFE_SITE"
     INVALID_INPUT = "INVALID_INPUT"
 
+class OptimizerSiteStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    LIMITED = "LIMITED"
+    FULL = "FULL"
+    UNSAFE = "UNSAFE"
+    UNAVAILABLE = "UNAVAILABLE"
+
 class OptimizerHabitation(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     habitation_id: UUID
     population: int = Field(..., ge=0)
     vulnerable_population: int = Field(..., ge=0)
@@ -27,6 +36,8 @@ class OptimizerHabitation(BaseModel):
         return self
 
 class OptimizerCandidateSite(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     site_id: UUID
     name: str
     latitude: float = Field(..., ge=-90.0, le=90.0)
@@ -39,7 +50,7 @@ class OptimizerCandidateSite(BaseModel):
     healthcare_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     community_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     hazard_exposure: Optional[float] = Field(None, ge=0.0, le=100.0)
-    status: str
+    status: OptimizerSiteStatus
 
     @model_validator(mode='after')
     def validate_capacity(self):
@@ -48,22 +59,34 @@ class OptimizerCandidateSite(BaseModel):
         return self
 
 class OptimizerInput(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     source_habitation: OptimizerHabitation
     candidate_sites: List[OptimizerCandidateSite]
 
 class OptimizerAllocation(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     site_id: UUID
     population: int = Field(..., ge=0)
     percentage: float = Field(..., ge=0.0, le=100.0)
     distance_km: float = Field(..., ge=0.0)
     site_score: float = Field(..., ge=0.0, le=100.0)
 
+class HazardExposureInfo(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    exposure: float
+
 class OptimizerRejectedSite(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     site_id: UUID
     reason: str
-    hazard_exposure_info: Optional[Dict[str, Any]] = None
+    hazard_exposure_info: Optional[HazardExposureInfo] = None
 
 class OptimizerOutput(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     source_habitation_id: UUID
     source_population: int = Field(..., ge=0)
     vulnerable_population: int = Field(..., ge=0)
@@ -74,3 +97,16 @@ class OptimizerOutput(BaseModel):
     allocations: List[OptimizerAllocation]
     rejected_sites: List[OptimizerRejectedSite]
 
+    @model_validator(mode='after')
+    def validate_output_invariants(self):
+        if self.allocated_population + self.uncovered_population != self.source_population:
+            raise ValueError("allocated_population + uncovered_population must equal source_population")
+        
+        if self.vulnerable_population > self.source_population:
+            raise ValueError("vulnerable_population cannot exceed source_population")
+            
+        alloc_sum = sum(a.population for a in self.allocations)
+        if alloc_sum != self.allocated_population:
+            raise ValueError(f"Sum of allocation populations ({alloc_sum}) does not match allocated_population ({self.allocated_population})")
+            
+        return self
