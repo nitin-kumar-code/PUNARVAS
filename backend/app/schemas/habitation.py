@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
-from app.models.enums import PriorityLevel, EvacuationStatus
+from app.models.enums import PriorityLevel, EvacuationStatus, RiskLevel
 
 class HabitationBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -18,6 +18,7 @@ class HabitationBase(BaseModel):
     
     primary_hazard: Optional[str] = None
     risk_score: Optional[float] = Field(None, ge=0.0, le=100.0)
+    risk_level: Optional[RiskLevel] = None
     
     priority_level: PriorityLevel = PriorityLevel.P3
     evacuation_status: EvacuationStatus = EvacuationStatus.PENDING
@@ -32,6 +33,8 @@ class HabitationUpdate(HabitationBase):
     block: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    total_population: Optional[int] = Field(None, ge=0)
+    vulnerable_population: Optional[int] = Field(None, ge=0)
 
 class Habitation(HabitationBase):
     id: UUID

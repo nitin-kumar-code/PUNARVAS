@@ -37,9 +37,14 @@ class AllocationResult(BaseModel):
     vulnerable_population: int
     allocation_percentage: float
 
+class RejectedSite(BaseModel):
+    site_id: str
+    site_name: str
+    reason: str
+
 class OptimizationResult(BaseModel):
     allocations: List[AllocationResult]
-    rejected_sites: List[Dict[str, str]]
+    rejected_sites: List[RejectedSite]
     coverage_percentage: float
     total_travel_time: float = 0.0
 

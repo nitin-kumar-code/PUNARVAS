@@ -65,7 +65,7 @@ def test_hazard_conflict_rejection():
     result = opt.optimize(source, [site_c])
     assert len(result.allocations) == 0
     assert len(result.rejected_sites) == 1
-    assert "FLOOD" in result.rejected_sites[0]["reason"]
+    assert "FLOOD" in result.rejected_sites[0].reason
 
 def test_shortfall_allocation():
     opt = BaselineOptimizer()

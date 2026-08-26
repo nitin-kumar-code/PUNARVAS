@@ -14,6 +14,8 @@ from app.models.site_assessment import SiteAssessment
 from app.models.relocation_plan import RelocationPlan
 from app.models.allocation import Allocation
 from app.models.decision_receipt import DecisionReceipt
+from app.models.hazard import Hazard
+from app.models.site_hazard_exposure import SiteHazardExposure
 
 __all__ = [
     "Base",
@@ -30,4 +32,6 @@ __all__ = [
     "RelocationPlan",
     "Allocation",
     "DecisionReceipt",
+    "Hazard",
+    "SiteHazardExposure",
 ]

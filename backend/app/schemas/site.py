@@ -26,6 +26,11 @@ class CandidateSiteBase(BaseModel):
     earthquake_risk: float = Field(0.0, ge=0.0, le=100.0)
     
     overall_safety_score: Optional[float] = Field(None, ge=0.0, le=100.0)
+    accessibility_score: Optional[float] = Field(None, ge=0.0, le=100.0)
+    infrastructure_score: Optional[float] = Field(None, ge=0.0, le=100.0)
+    healthcare_score: Optional[float] = Field(None, ge=0.0, le=100.0)
+    community_score: Optional[float] = Field(None, ge=0.0, le=100.0)
+    
     status: SiteStatus = SiteStatus.ACTIVE
 
 class CandidateSiteCreate(CandidateSiteBase):

@@ -7,7 +7,7 @@ from app.main import app
 from app.db.base import Base
 from app.core.database import get_db
 
-SQLALCHEMY_DATABASE_URL = "postgresql+psycopg://postgres:password@localhost:5432/punarvas_test"
+SQLALCHEMY_DATABASE_URL = "postgresql+psycopg://localhost:5433/punarvas_test"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

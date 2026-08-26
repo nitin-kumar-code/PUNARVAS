@@ -15,3 +15,10 @@ __all__ = [
     "Allocation", "AllocationCreate", "AllocationUpdate",
     "DecisionReceipt", "DecisionReceiptCreate", "DecisionReceiptUpdate",
 ]
+from app.schemas.hazard import Hazard, HazardCreate, HazardUpdate
+from app.schemas.site_hazard_exposure import SiteHazardExposure, SiteHazardExposureCreate, SiteHazardExposureUpdate
+
+__all__.extend([
+    "Hazard", "HazardCreate", "HazardUpdate",
+    "SiteHazardExposure", "SiteHazardExposureCreate", "SiteHazardExposureUpdate"
+])

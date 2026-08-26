@@ -5,9 +5,12 @@ from datetime import datetime
 
 class AllocationBase(BaseModel):
     candidate_site_id: UUID
+    source_habitation_id: Optional[UUID] = None
     population_allocated: int = Field(..., ge=0)
     vulnerable_population_allocated: int = Field(0, ge=0)
     travel_time_minutes: Optional[float] = Field(None, ge=0.0)
+    distance_km: Optional[float] = Field(None, ge=0.0)
+    site_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     allocation_percentage: float = Field(0.0, ge=0.0, le=100.0)
 
 class AllocationCreate(AllocationBase):
