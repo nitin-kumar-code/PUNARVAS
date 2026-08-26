@@ -90,7 +90,7 @@ type Allocation = {
   site_score: number;
 };
 
-type Plan = {
+export type Plan = {
   source_habitation_id: string;
   status: string;
   source_population: number;
@@ -100,12 +100,13 @@ type Plan = {
   rejected_sites: {site_id: string; reason: string}[];
 };
 
-export default function GisMap() {
+export default function GisMap({ globalPlan, setGlobalPlan }: { globalPlan: any, setGlobalPlan: (plan: any) => void }) {
   const [habitations, setHabitations] = useState<Habitation[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [hazards, setHazards] = useState<Hazard[]>([]);
   
-  const [plan, setPlan] = useState<Plan | null>(null);
+  const plan = globalPlan;
+  const setPlan = setGlobalPlan;
   const [loadingPlan, setLoadingPlan] = useState(false);
   
   const [initialLoading, setInitialLoading] = useState(true);
@@ -173,7 +174,7 @@ export default function GisMap() {
 
   const getSiteIcon = (site: Site) => {
     if (site.status === 'UNSAFE' || site.status === 'UNAVAILABLE') return ICONS.SITE_UNSAFE;
-    if (plan?.allocations.find(a => a.site_id === site.id)) return ICONS.SITE_RECOMMENDED;
+    if (plan?.allocations.find((a: any) => a.site_id === site.id)) return ICONS.SITE_RECOMMENDED;
     return ICONS.SITE_SAFE;
   };
 
@@ -343,7 +344,7 @@ export default function GisMap() {
         ))}
 
         {/* Relocation Route Polylines */}
-        {plan && showHabitations && showSites && plan.allocations.map(alloc => {
+        {plan && showHabitations && showSites && plan.allocations.map((alloc: any) => {
           const source = habitations.find(h => h.id === plan.source_habitation_id);
           const dest = sites.find(s => s.id === alloc.site_id);
           if (!source || !dest) return null;
@@ -364,8 +365,8 @@ export default function GisMap() {
 
         {/* Sites */}
         {showSites && sites.map(site => {
-          const alloc = plan?.allocations.find(a => a.site_id === site.id);
-          const rejected = plan?.rejected_sites.find(r => r.site_id === site.id);
+          const alloc = plan?.allocations.find((a: any) => a.site_id === site.id);
+          const rejected = plan?.rejected_sites.find((r: any) => r.site_id === site.id);
           const isRecommended = !!alloc;
           
           return (

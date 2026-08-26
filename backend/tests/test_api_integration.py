@@ -95,7 +95,7 @@ def test_insufficient_safe_capacity(client):
         "block": "Block",
         "latitude": 20.0,
         "longitude": 80.0,
-        "total_population": 10000,
+        "total_population": 100000000,
         "vulnerable_population": 300,
         "households": 2500
     }
