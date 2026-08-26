@@ -145,7 +145,7 @@ def test_fully_covered_output():
     assert out.status == OptimizerStatus.FULLY_COVERED
     assert out.coverage_percentage == 100.0
 
-def test_partially_covered_output():
+def test_insufficient_capacity_output():
     site_id = uuid4()
     hab_id = uuid4()
     alloc = OptimizerAllocation(
@@ -163,11 +163,11 @@ def test_partially_covered_output():
         allocated_population=500,
         uncovered_population=500,
         coverage_percentage=50.0,
-        status=OptimizerStatus.PARTIALLY_COVERED,
+        status=OptimizerStatus.INSUFFICIENT_CAPACITY,
         allocations=[alloc],
         rejected_sites=[]
     )
-    assert out.status == OptimizerStatus.PARTIALLY_COVERED
+    assert out.status == OptimizerStatus.INSUFFICIENT_CAPACITY
     assert out.coverage_percentage == 50.0
 
 def test_rejected_site_representation():
@@ -231,3 +231,25 @@ def test_invalid_output_invariants():
             allocations=[alloc],
             rejected_sites=[]
         )
+
+def test_invalid_coverage_percentage():
+    alloc = OptimizerAllocation(
+        site_id=uuid4(),
+        population=500,
+        percentage=50.0,
+        distance_km=5.0,
+        site_score=95.0
+    )
+    with pytest.raises(ValidationError) as exc:
+        OptimizerOutput(
+            source_habitation_id=uuid4(),
+            source_population=1000,
+            vulnerable_population=300,
+            allocated_population=500,
+            uncovered_population=500,
+            coverage_percentage=99.0, # Wrong, should be 50.0
+            status=OptimizerStatus.INSUFFICIENT_CAPACITY,
+            allocations=[alloc],
+            rejected_sites=[]
+        )
+    assert "coverage_percentage (99.0) inconsistent with allocated/source population" in str(exc.value)

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.routes import dashboard, habitations, risk, sites, relocation, decisions
+from app.api.routes import dashboard, habitations, risk, sites, relocation, decisions, hazards
 
 app = FastAPI(
     title="PUNARVAS API",
@@ -39,6 +39,7 @@ def health_check():
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_PREFIX}/dashboard", tags=["dashboard"])
 app.include_router(habitations.router, prefix=f"{settings.API_V1_PREFIX}/habitations", tags=["habitations"])
 app.include_router(sites.router, prefix=f"{settings.API_V1_PREFIX}/sites", tags=["sites"])
+app.include_router(hazards.router, prefix=f"{settings.API_V1_PREFIX}/hazards", tags=["hazards"])
 app.include_router(relocation.router, prefix=f"{settings.API_V1_PREFIX}/relocation-plans", tags=["relocation-plans"])
 app.include_router(decisions.router, prefix=f"{settings.API_V1_PREFIX}/decisions", tags=["decisions"])
 

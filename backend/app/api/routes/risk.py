@@ -41,10 +41,11 @@ def get_relocation_candidates(db: Session = Depends(get_db)):
     service = HabitationService(db)
     return service.get_relocation_candidates()
 
-from app.schemas.intelligence import RelocationRecommendationRequest, RelocationRecommendationResponse
+from app.schemas.intelligence import RelocationRecommendationRequest
+from app.optimization.schemas import OptimizerOutput
 from app.services.relocation_service import RelocationService
 
-@router.post("/relocation/recommend", response_model=RelocationRecommendationResponse)
+@router.post("/relocation/recommend", response_model=OptimizerOutput)
 def recommend_relocation(request: RelocationRecommendationRequest, db: Session = Depends(get_db)):
     service = RelocationService(db)
     return service.recommend_relocation(request.habitation_id)

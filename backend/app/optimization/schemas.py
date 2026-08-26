@@ -5,7 +5,6 @@ from uuid import UUID
 
 class OptimizerStatus(str, Enum):
     FULLY_COVERED = "FULLY_COVERED"
-    PARTIALLY_COVERED = "PARTIALLY_COVERED"
     INSUFFICIENT_CAPACITY = "INSUFFICIENT_CAPACITY"
     NO_SAFE_SITE = "NO_SAFE_SITE"
     INVALID_INPUT = "INVALID_INPUT"
@@ -47,6 +46,7 @@ class OptimizerCandidateSite(BaseModel):
     safety_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     accessibility_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     infrastructure_score: Optional[float] = Field(None, ge=0.0, le=100.0)
+    # Reserved for future optimization algorithms; presently fetched but not weighted in baseline
     healthcare_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     community_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     hazard_exposure: Optional[float] = Field(None, ge=0.0, le=100.0)
@@ -108,5 +108,10 @@ class OptimizerOutput(BaseModel):
         alloc_sum = sum(a.population for a in self.allocations)
         if alloc_sum != self.allocated_population:
             raise ValueError(f"Sum of allocation populations ({alloc_sum}) does not match allocated_population ({self.allocated_population})")
+            
+        # Ensure coverage percentage is mathematically consistent
+        expected_coverage = round((self.allocated_population / self.source_population * 100.0), 2) if self.source_population > 0 else 100.0
+        if abs(self.coverage_percentage - expected_coverage) > 0.01:
+            raise ValueError(f"coverage_percentage ({self.coverage_percentage}) inconsistent with allocated/source population (expected ~{expected_coverage})")
             
         return self
