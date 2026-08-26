@@ -94,3 +94,51 @@ Returns points representing critical hazard zones.
   }
 ]
 ```
+
+## Intelligence API Endpoints (Phase 3)
+
+### `POST /api/risk-assessments`
+Executes baseline ML risk scoring.
+**Request**
+```json
+{
+  "habitation_id": "uuid-string",
+  "features": {
+    "hazard_exposure": 85,
+    "terrain_factor": 90,
+    "population_vulnerability": 70,
+    "infrastructure_vulnerability": 60,
+    "accessibility_factor": 50,
+    "historical_exposure": 40
+  }
+}
+```
+**Response**
+```json
+{
+  "habitation_id": "uuid-string",
+  "overall_score": 72.25,
+  "risk_level": "HIGH",
+  "primary_driver": "terrain_factor",
+  "confidence_score": 90.0,
+  "explanation": [
+    {
+      "factor": "terrain_factor",
+      "value": 90,
+      "contribution": 18.0,
+      "severity": "CRITICAL"
+    }
+  ]
+}
+```
+
+### `GET /api/relocation/candidates`
+Returns habitations prioritized for immediate action (CRITICAL or score >= 85).
+
+### `POST /api/relocation/recommend`
+Executes greedy optimization to generate a safe, multi-site plan.
+**Request**: `{"habitation_id": "uuid"}`
+**Response**: Includes `optimization_result` with allocations and `rejected_sites`.
+
+### `POST /api/decisions/generate`
+Records the final, immutable decision receipt including optimization outputs and risk snapshots.

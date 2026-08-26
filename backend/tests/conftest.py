@@ -12,11 +12,8 @@ SQLALCHEMY_DATABASE_URL = "postgresql+psycopg://postgres:password@localhost:5432
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Recreate the database schema for tests
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
-
 def override_get_db():
+    Base.metadata.create_all(bind=engine)
     try:
         db = TestingSessionLocal()
         yield db
@@ -32,6 +29,7 @@ def client():
 
 @pytest.fixture(scope="module")
 def db():
+    Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     yield db
     db.close()
