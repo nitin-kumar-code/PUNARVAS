@@ -51,10 +51,6 @@ class OptimizationResult(BaseModel):
 class RelocationRecommendationRequest(BaseModel):
     habitation_id: UUID
 
-class RelocationRecommendationResponse(BaseModel):
-    source_habitation: Dict
-    candidate_sites: List[Dict]
-    optimization_result: OptimizationResult
 
 class DecisionGenerateRequest(BaseModel):
     habitation_id: UUID
