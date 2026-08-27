@@ -22,14 +22,39 @@ export const RelocationPlanner = () => {
   const [selectedSiteIds, setSelectedSiteIds] = useState<string[]>(['site-b', 'site-d']);
   const [viewSite, setViewSite] = useState<RelocationSite | null>(null);
 
-  // Engine: identify recommended site
+  // Engine: calculate recommendation scores
   const recommendedSite = useMemo(() => {
     const eligible = relocationSites.filter(s => s.eligible);
-    // Highest safety score logic for demo
-    return eligible.reduce((prev, curr) => (curr.safetyScore > prev.safetyScore ? curr : prev), eligible[0]);
+    
+    let bestSite = eligible[0];
+    let maxScore = -1;
+
+    for (const site of eligible) {
+      const safetyWeight = site.safetyScore * 0.35;
+      const capacityScore = Math.min(100, Math.round((site.availableCapacity / 1000) * 100));
+      const capacityWeight = capacityScore * 0.25;
+      const accScore = site.accessibility === 'Good' ? 91 : site.accessibility === 'Moderate' ? 70 : 40;
+      const accWeight = accScore * 0.15;
+      const infScore = site.infrastructure.roads === 'Operational' ? 95 : 60;
+      const infWeight = infScore * 0.15;
+      const distScore = Math.max(0, 100 - (site.distance * 2));
+      const distWeight = distScore * 0.10;
+      
+      const totalScore = safetyWeight + capacityWeight + accWeight + infWeight + distWeight;
+      
+      if (totalScore > maxScore) {
+        maxScore = totalScore;
+        bestSite = site;
+      }
+    }
+    
+    return bestSite;
   }, []);
 
   const handleSelectSite = (id: string) => {
+    const site = relocationSites.find(s => s.id === id);
+    if (!site || !site.eligible) return; // STRICT ENFORCEMENT
+    
     setSelectedSiteIds(prev => {
       if (prev.includes(id)) return prev.filter(s => s !== id);
       return [...prev, id];
@@ -43,7 +68,7 @@ export const RelocationPlanner = () => {
     
     // Sort selected sites by recommendation, then safety
     const sitesToAllocate = relocationSites
-      .filter(s => selectedSiteIds.includes(s.id))
+      .filter(s => selectedSiteIds.includes(s.id) && s.eligible) // DOUBLE ENFORCEMENT
       .sort((a, b) => {
         if (a.id === recommendedSite?.id) return -1;
         if (b.id === recommendedSite?.id) return 1;
@@ -86,7 +111,7 @@ export const RelocationPlanner = () => {
         <div className="w-full lg:w-[30%] flex flex-col gap-6 shrink-0 overflow-y-auto pr-1">
           <SourceHabitationCard habitation={sourceHabitation} />
           
-          <RecommendationRationale siteName={recommendedSite?.name || ''} />
+          <RecommendationRationale site={recommendedSite} />
         </div>
 
         {/* Right Column - 70% */}

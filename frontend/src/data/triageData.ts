@@ -31,7 +31,7 @@ export const triageData: TriageRecord[] = [
     hazardSeverity: 95, // 95 * 0.4 = 38
     exposureLevel: 90,  // 90 * 0.3 = 27
     vulnerability: 86,  // 86 * 0.3 = 25.8 (Total: 90.8 ~ 91)
-    population: 4500,
+    population: 1840,
     vulnerablePopulation: 312,
     confidence: "High",
     priority: "P1 — Immediate",
