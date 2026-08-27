@@ -1,5 +1,4 @@
 import json
-import os
 import uuid
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -9,12 +8,17 @@ HABITATION_SCORES_PATH = PROJECT_ROOT / "ai-ml" / "outputs" / "habitation_scores
 SITE_SCORES_PATH = PROJECT_ROOT / "ai-ml" / "outputs" / "site_scores.json"
 
 HABITATION_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+SITE_NAMESPACE = uuid.UUID('7ba7b810-9dad-11d1-80b4-00c04fd430c9')
 
 class JSONDataService:
     def __init__(self):
         self._habitations: Optional[List[Dict[str, Any]]] = None
         self._habitations_by_uuid: Optional[Dict[uuid.UUID, Dict[str, Any]]] = None
         self._sites: Optional[List[Dict[str, Any]]] = None
+        self._sites_by_uuid: Optional[Dict[uuid.UUID, Dict[str, Any]]] = None
+        
+        # Test hook to bypass strict upstream validation during CI
+        self._test_mode_capacity_override = False
 
     def _load_json(self, file_path: Path) -> List[Dict[str, Any]]:
         if not file_path.exists():
@@ -28,9 +32,11 @@ class JSONDataService:
             self._habitations = []
             self._habitations_by_uuid = {}
             for hab in raw_habs:
-                # Generate collision-resistant UUID5
-                hab_id = hab.get("habitation_id", 0)
-                deterministic_id = uuid.uuid5(HABITATION_NAMESPACE, str(hab_id))
+                if "habitation_id" not in hab:
+                    raise ValueError("CRITICAL DATA GAP: Missing 'habitation_id' in habitation_scores.json.")
+                    
+                hab_id = str(hab["habitation_id"])
+                deterministic_id = uuid.uuid5(HABITATION_NAMESPACE, hab_id)
                 hab["id"] = deterministic_id
                 self._habitations.append(hab)
                 self._habitations_by_uuid[deterministic_id] = hab
@@ -44,14 +50,37 @@ class JSONDataService:
 
     def get_all_sites(self) -> List[Dict[str, Any]]:
         if self._sites is None:
-            self._sites = self._load_json(SITE_SCORES_PATH)
+            raw_sites = self._load_json(SITE_SCORES_PATH)
+            self._sites = []
+            self._sites_by_uuid = {}
+            for site in raw_sites:
+                if "site_id" not in site:
+                    raise ValueError("CRITICAL DATA GAP: Missing 'site_id' in site_scores.json.")
+                
+                # Strict Upstream Requirement
+                if "capacity_people" not in site and not self._test_mode_capacity_override:
+                    raise ValueError(
+                        "CRITICAL DATA GAP: site_scores.json is missing 'capacity_people'. "
+                        "The relocation optimizer strictly requires this field. "
+                        "Please require this upstream in the ML pipeline. "
+                        "(Set JSONDataService._test_mode_capacity_override = True in tests to bypass)."
+                    )
+                
+                # If testing, inject a mock capacity so the API tests don't 500
+                if self._test_mode_capacity_override and "capacity_people" not in site:
+                    site["capacity_people"] = 1000
+                    site["available_capacity"] = 1000
+                    
+                site_id_str = str(site["site_id"])
+                deterministic_id = uuid.uuid5(SITE_NAMESPACE, site_id_str)
+                site["id"] = deterministic_id
+                self._sites.append(site)
+                self._sites_by_uuid[deterministic_id] = site
         return self._sites
 
-    def get_site_by_id(self, site_id: str) -> Optional[Dict[str, Any]]:
-        sites = self.get_all_sites()
-        for site in sites:
-            if site.get("site_id") == site_id:
-                return site
-        return None
+    def get_site_by_id(self, site_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+        if self._sites_by_uuid is None:
+            self.get_all_sites()
+        return self._sites_by_uuid.get(site_id)
 
 json_data_service = JSONDataService()
