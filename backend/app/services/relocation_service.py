@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from app.models.habitation import Habitation
 from app.models.candidate_site import CandidateSite
 from app.models.site_hazard_exposure import SiteHazardExposure
-from app.optimization.engine import BaselineRelocationEngine
+from app.optimization.engine import get_engine
 from app.optimization.schemas import (
     OptimizerHabitation,
     OptimizerCandidateSite,
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class RelocationService:
     def __init__(self, db: Session):
         self.db = db
-        self.engine = BaselineRelocationEngine()
+        self.engine = get_engine()
         
     def recommend_relocation(self, habitation_id: UUID) -> OptimizerOutput:
         # 1. Fetch habitation information
