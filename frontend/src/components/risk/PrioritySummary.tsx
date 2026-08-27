@@ -1,11 +1,17 @@
 import React from 'react';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import type { TriageRecord } from '../../data/triageData';
 
-export const PrioritySummary = () => {
+export const PrioritySummary = ({ data }: { data?: TriageRecord[] }) => {
+  const countP1 = data?.filter(r => r.priority.includes('P1')).length || 8;
+  const countP2 = data?.filter(r => r.priority === 'P2').length || 10;
+  const countP3 = data?.filter(r => r.priority === 'P3').length || 6;
+  const countP4 = data?.filter(r => r.priority === 'P4').length || 12;
+
   const cards = [
     {
       label: 'IMMEDIATE',
-      value: 8,
+      value: countP1,
       trend: 2,
       trendDir: 'up',
       color: 'text-punarvas-critical-red',
@@ -13,7 +19,7 @@ export const PrioritySummary = () => {
     },
     {
       label: 'SHORT-TERM',
-      value: 10,
+      value: countP2,
       trend: 0,
       trendDir: 'flat',
       color: 'text-punarvas-high-orange',
@@ -21,7 +27,7 @@ export const PrioritySummary = () => {
     },
     {
       label: 'MEDIUM-TERM',
-      value: 6,
+      value: countP3,
       trend: 1,
       trendDir: 'down',
       color: 'text-punarvas-medium-yellow',
@@ -29,7 +35,7 @@ export const PrioritySummary = () => {
     },
     {
       label: 'LOWER PRIORITY',
-      value: 12,
+      value: countP4,
       trend: 0,
       trendDir: 'flat',
       color: 'text-punarvas-safe-green',
