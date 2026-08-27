@@ -7,9 +7,13 @@ import { RelocationPlanModal } from '../components/dashboard/RelocationPlanModal
 import { mapLocations } from '../data/mapData';
 import type { MapLocation } from '../data/mapData';
 
+import { useLocation } from 'react-router-dom';
+
 export const MapInterface = () => {
+  const locationState = useLocation().state as { selectedLocationId?: string } | null;
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(mapLocations[0]);
+  const defaultLocation = mapLocations.find(l => l.id === locationState?.selectedLocationId) || mapLocations[0];
+  const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(defaultLocation);
   
   const [filters, setFilters] = useState({
     baseLayer: {

@@ -2,9 +2,18 @@ import { useState, useEffect } from 'react';
 import { X, CheckCircle } from 'lucide-react';
 import { habitations } from '../../data/mockData';
 
-export const RelocationPlanModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+export const RelocationPlanModal = ({ isOpen, onClose, initialHabitationId }: { isOpen: boolean, onClose: () => void, initialHabitationId?: string }) => {
   const [step, setStep] = useState(1);
-  const [selectedHab, setSelectedHab] = useState(habitations[0].id);
+  const [selectedHab, setSelectedHab] = useState(initialHabitationId || habitations[0].id);
+
+  // Update selectedHab if initialHabitationId changes while open
+  useEffect(() => {
+    if (isOpen && initialHabitationId) {
+      setSelectedHab(initialHabitationId);
+      setStep(1);
+    }
+  }, [isOpen, initialHabitationId]);
+
   const hab = habitations.find(h => h.id === selectedHab);
 
   if (!isOpen) return null;
