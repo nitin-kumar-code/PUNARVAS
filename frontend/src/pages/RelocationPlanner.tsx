@@ -145,7 +145,14 @@ export const RelocationPlanner = () => {
       {/* Bottom Action Bar */}
       <div className="bg-white border-t border-slate-200 p-4 shrink-0 flex justify-end sticky bottom-0 mt-2 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button 
-          onClick={() => navigate('/decision')}
+          onClick={() => navigate('/decision', { 
+            state: { 
+              source: sourceHabitation, 
+              allocation: allocation,
+              recommendedSite: recommendedSite,
+              selectedSites: selectedSiteIds
+            } 
+          })}
           className="bg-punarvas-safe-green hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-colors text-lg"
         >
           Generate Final Plan

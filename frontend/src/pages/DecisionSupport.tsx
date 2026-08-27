@@ -1,14 +1,67 @@
-import React, { useState } from 'react';
-import { Download } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Download, X } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { SourceContextPanel } from '../components/decision/SourceContextPanel';
 import { FinalReceipt } from '../components/decision/FinalReceipt';
 import { mockDecision } from '../data/decisionData';
+import type { DecisionRecord } from '../data/decisionData';
 
 export const DecisionSupport = () => {
-  const [decision] = useState(mockDecision);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const state = location.state as any;
+
+  // Construct decision dynamically from state, fallback to mock if direct navigation
+  const [decision, setDecision] = useState<DecisionRecord>(() => {
+    if (!state?.source) return mockDecision;
+
+    // Dynamically calculate the factors so they sum exactly to the risk score
+    // In a real app this comes from the backend AI model
+    const risk = state.source.riskScore;
+    const factor1 = Math.round(risk * 0.38); // ~38%
+    const factor2 = Math.round(risk * 0.30); // ~30%
+    const factor3 = Math.round(risk * 0.20); // ~20%
+    const factor4 = risk - (factor1 + factor2 + factor3); // remainder ensures exact match
+
+    return {
+      decisionId: `PLAN-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      status: 'APPROVED / READY FOR EXECUTION',
+      source: {
+        id: state.source.id,
+        name: state.source.habitation, // triage data uses 'habitation'
+        population: state.source.population,
+        vulnerablePopulation: state.source.vulnerablePopulation,
+        hazard: state.source.hazard,
+        riskScore: state.source.riskScore,
+        priority: state.source.priority
+      },
+      factors: [
+        { name: "HAZARD EXPOSURE", contribution: factor1, severity: "critical" },
+        { name: "VULNERABILITY", contribution: factor2, severity: "high" },
+        { name: "POOR ROAD ACCESS", contribution: factor3, severity: "medium" },
+        { name: "ACTIVE HAZARD SIGNAL", contribution: factor4, severity: "critical" }
+      ],
+      confidence: 94,
+      confidenceLabel: "HIGH",
+      destinations: state.allocation.alloc.map((a: any, idx: number) => ({
+        site: a.site.name,
+        role: idx === 0 ? "Primary" : "Secondary",
+        allocation: a.people
+      })),
+      coverage: state.allocation.coveragePercent,
+      auditTrail: mockDecision.auditTrail
+    };
+  });
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const handleExecute = () => {
+    setDecision(prev => ({ ...prev, status: 'EXECUTING' }));
+    setShowConfirmModal(false);
+  };
 
   return (
-    <div className="max-w-[1200px] mx-auto w-full pb-10">
+    <div className="max-w-[1200px] mx-auto w-full pb-10 relative">
       
       {/* Page Header */}
       <div className="flex justify-between items-start mb-6">
@@ -30,8 +83,10 @@ export const DecisionSupport = () => {
         <div className={`px-4 py-2 text-sm font-bold uppercase ${
           decision.status === 'APPROVED / READY FOR EXECUTION' 
             ? 'bg-[#E8F8EE] text-punarvas-safe-green border border-[#BBE5CB]' 
+            : decision.status === 'EXECUTING'
+            ? 'bg-blue-100 text-blue-800 border border-blue-200'
             : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-        } rounded-lg`}>
+        } rounded-lg transition-colors`}>
           {decision.status}
         </div>
       </div>
@@ -88,7 +143,7 @@ export const DecisionSupport = () => {
             <p><strong>Model:</strong> PUNARVAS Risk Prioritization Model</p>
             <p><strong>Version:</strong> v1.0</p>
             <p><strong>Assessment:</strong> Latest</p>
-            <p><strong>Confidence:</strong> 94%</p>
+            <p><strong>Confidence:</strong> {decision.confidence}% (Note: Mock heuristic for demo)</p>
           </div>
         </details>
       </div>
@@ -96,7 +151,11 @@ export const DecisionSupport = () => {
       {/* Action Buttons */}
       <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex gap-3">
-          <button className="bg-punarvas-safe-green hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-colors text-lg">
+          <button 
+            onClick={() => setShowConfirmModal(true)}
+            disabled={decision.status !== 'APPROVED / READY FOR EXECUTION'}
+            className="disabled:opacity-50 disabled:cursor-not-allowed bg-punarvas-safe-green hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-colors text-lg"
+          >
             Execute Relocation Plan
           </button>
           <button className="bg-punarvas-dark-navy hover:bg-slate-800 text-white px-6 py-3 rounded-lg font-bold shadow-sm transition-colors">
@@ -104,14 +163,64 @@ export const DecisionSupport = () => {
           </button>
         </div>
         <div className="flex gap-3">
-          <button className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-5 py-3 rounded-lg font-bold transition-colors">
+          <button 
+            onClick={() => navigate('/map', { state: { selectedLocationId: decision.source.id } })}
+            className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-5 py-3 rounded-lg font-bold transition-colors"
+          >
             View on Map
           </button>
-          <button className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-5 py-3 rounded-lg font-bold transition-colors">
+          <button 
+            onClick={() => navigate('/relocation', { state: { selectedHabitationId: decision.source.id } })}
+            className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-5 py-3 rounded-lg font-bold transition-colors"
+          >
             Return to Planner
           </button>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-punarvas-dark-navy/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-lg text-punarvas-text">Confirm Execution</h3>
+              <button onClick={() => setShowConfirmModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-sm font-semibold text-slate-500">Source</span>
+                <span className="text-sm font-bold">{decision.source.name}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-sm font-semibold text-slate-500">Population</span>
+                <span className="text-sm font-bold">{decision.source.population.toLocaleString()}</span>
+              </div>
+              {decision.destinations.map((d, i) => (
+                <div key={i} className="flex justify-between border-b pb-2">
+                  <span className="text-sm font-semibold text-slate-500">{d.role}</span>
+                  <span className="text-sm font-bold">{d.site} ({d.allocation})</span>
+                </div>
+              ))}
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-sm font-semibold text-slate-500">Coverage</span>
+                <span className={`text-sm font-bold ${decision.coverage === 100 ? 'text-punarvas-safe-green' : 'text-punarvas-high-orange'}`}>{decision.coverage}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-semibold text-slate-500">Status</span>
+                <span className="text-sm font-bold text-punarvas-safe-green">{decision.status}</span>
+              </div>
+            </div>
+
+            <div className="p-5 bg-slate-50 flex justify-end gap-3 border-t border-slate-200">
+              <button onClick={() => setShowConfirmModal(false)} className="px-4 py-2 border rounded-lg font-semibold text-slate-700 hover:bg-slate-100">Cancel</button>
+              <button onClick={handleExecute} className="px-4 py-2 bg-punarvas-critical-red text-white rounded-lg font-bold hover:bg-red-700 transition-colors">Confirm & Execute</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
