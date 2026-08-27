@@ -1,50 +1,103 @@
-from sqlalchemy.orm import Session
-from typing import List, Dict, Any
-from app.models.habitation import Habitation
+from typing import List, Dict, Any, Optional
+import uuid
+from datetime import datetime
 from app.models.enums import RiskLevel, EvacuationStatus
+from app.services.json_data_service import json_data_service
+
+def _map_json_to_dict(hab: Dict[str, Any]) -> dict:
+    triage = hab.get("triage_level", "").upper()
+    risk_level = None
+    if "CRITICAL" in triage:
+        risk_level = RiskLevel.CRITICAL
+    elif "HIGH" in triage or "SEVERE" in triage:
+        risk_level = RiskLevel.HIGH
+    elif "MODERATE" in triage or "MEDIUM" in triage:
+        risk_level = RiskLevel.MEDIUM
+    elif "LOW" in triage:
+        risk_level = RiskLevel.LOW
+        
+    return {
+        "id": hab["id"], # Provided by JSONDataService
+        "habitation_id": hab.get("habitation_id"),
+        "name": hab.get("village_name", "Unknown Village"),
+        "village_name": hab.get("village_name"),
+        "district": hab.get("sub_district", "Unknown"),
+        "sub_district": hab.get("sub_district"),
+        "state": "Uttarakhand",
+        "block": hab.get("sub_district", "Unknown"),
+        "latitude": hab.get("latitude", 0.0),
+        "longitude": hab.get("longitude", 0.0),
+        "population": hab.get("population", 0),
+        "total_population": hab.get("population", 0),
+        "households": 0,
+        "vulnerable_population": 0,
+        "hazard_component": hab.get("hazard_component"),
+        "exposure_component": hab.get("exposure_component"),
+        "vulnerability_component": hab.get("vulnerability_component"),
+        "risk_score": hab.get("risk_score"),
+        "triage_level": hab.get("triage_level"),
+        "confidence_score": hab.get("confidence_score"),
+        "explanation": hab.get("explanation"),
+        "risk_level": risk_level,
+        "primary_hazard": "UNKNOWN (GAP: ML JSON missing flood/landslide score mapping)", 
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
 
 class HabitationService:
-    def __init__(self, db: Session):
+    def __init__(self, db=None): 
         self.db = db
-        
+        self.data_service = json_data_service
+
+    def get_all_habitations(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+        habs = self.data_service.get_all_habitations()
+        paginated = habs[skip : skip + limit]
+        return [_map_json_to_dict(h) for h in paginated]
+
+    def get_habitation_by_id(self, id: uuid.UUID) -> Optional[Dict[str, Any]]:
+        hab = self.data_service.get_habitation_by_id(id)
+        if hab:
+            return _map_json_to_dict(hab)
+        return None
+
     def get_risk_zones(self, min_risk_level: List[RiskLevel] = [RiskLevel.CRITICAL, RiskLevel.HIGH]) -> List[Dict[str, Any]]:
-        # Red zones are based on the latest assessment cached on the Habitation model
-        habitations = self.db.query(Habitation).filter(Habitation.risk_level.in_(min_risk_level)).all()
-        return [
-            {
-                "id": str(h.id),
-                "name": h.name,
-                "latitude": h.latitude,
-                "longitude": h.longitude,
-                "risk_score": h.risk_score,
-                "risk_level": h.risk_level.value if h.risk_level else None,
-                "primary_hazard": h.primary_hazard,
-                "vulnerable_population": h.vulnerable_population
-            }
-            for h in habitations
-        ]
+        habs = self.data_service.get_all_habitations()
+        results = []
+        for h in habs:
+            mapped = _map_json_to_dict(h)
+            if mapped["risk_level"] in min_risk_level:
+                results.append({
+                    "id": str(mapped["id"]),
+                    "name": mapped["name"],
+                    "latitude": mapped["latitude"],
+                    "longitude": mapped["longitude"],
+                    "risk_score": mapped["risk_score"],
+                    "risk_level": mapped["risk_level"].value if mapped["risk_level"] else None,
+                    "primary_hazard": mapped["primary_hazard"],
+                    "vulnerable_population": mapped.get("vulnerable_population", 0)
+                })
+        return results
         
     def get_relocation_candidates(self) -> List[Dict[str, Any]]:
-        # Immediate relocation candidates: CRITICAL or score >= 85 or evacuation is urgent
-        habitations = self.db.query(Habitation).filter(
-            (Habitation.risk_level == RiskLevel.CRITICAL) |
-            (Habitation.risk_score >= 85) |
-            (Habitation.evacuation_status == EvacuationStatus.ROUTING)
-        ).all()
-        
+        habs = self.data_service.get_all_habitations()
         candidates = []
-        for h in habitations:
-            reason = []
-            if h.risk_level == RiskLevel.CRITICAL: reason.append("CRITICAL risk level")
-            if h.risk_score and h.risk_score >= 85: reason.append("Score >= 85")
-            if h.evacuation_status == EvacuationStatus.ROUTING: reason.append("Evacuation Routing active")
+        for h in habs:
+            mapped = _map_json_to_dict(h)
             
-            candidates.append({
-                "habitation_id": str(h.id),
-                "name": h.name,
-                "risk_score": h.risk_score,
-                "vulnerable_population": h.vulnerable_population,
-                "primary_hazard": h.primary_hazard,
-                "reason_for_priority": ", ".join(reason)
-            })
+            is_critical = mapped["risk_level"] == RiskLevel.CRITICAL
+            high_score = mapped["risk_score"] and mapped["risk_score"] >= 85
+            
+            if is_critical or high_score:
+                reason = []
+                if is_critical: reason.append("CRITICAL risk level")
+                if high_score: reason.append("Score >= 85")
+                
+                candidates.append({
+                    "habitation_id": str(mapped["id"]),
+                    "name": mapped["name"],
+                    "risk_score": mapped["risk_score"],
+                    "vulnerable_population": mapped.get("vulnerable_population", 0),
+                    "primary_hazard": mapped.get("primary_hazard"),
+                    "reason_for_priority": ", ".join(reason)
+                })
         return candidates

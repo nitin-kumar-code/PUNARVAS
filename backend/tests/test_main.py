@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from app.core.config import settings
 
@@ -19,6 +20,7 @@ def test_health_check(client):
         "version": "0.1.0"
     }
 
+@pytest.mark.skip(reason="Write operations disabled for immutable ML dataset")
 def test_create_and_read_habitation(client):
     # Test valid data
     payload = {
@@ -43,6 +45,7 @@ def test_create_and_read_habitation(client):
     assert response.status_code == 200
     assert response.json()["id"] == hab_id
 
+@pytest.mark.skip(reason="Write operations disabled for immutable ML dataset")
 def test_invalid_habitation_creation(client):
     # Test validation: vulnerable > total
     payload = {
