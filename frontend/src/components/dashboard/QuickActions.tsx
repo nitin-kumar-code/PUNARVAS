@@ -1,15 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, ShieldAlert, Compass, Package, Download } from 'lucide-react';
-import { RelocationPlanModal } from './RelocationPlanModal';
 
 export const QuickActions = () => {
-  const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
       <div className="flex flex-wrap gap-4 mt-6">
         <button 
-          onClick={() => setModalOpen(true)}
+          onClick={() => navigate('/relocation')}
           className="flex items-center gap-2 bg-punarvas-primary-blue text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm"
         >
           <Plus className="w-5 h-5" />
@@ -36,8 +35,6 @@ export const QuickActions = () => {
           Export Dashboard
         </button>
       </div>
-
-      <RelocationPlanModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
 };

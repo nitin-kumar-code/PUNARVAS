@@ -10,11 +10,14 @@ import { triageData } from '../data/triageData';
 import { relocationSites } from '../data/relocationData';
 import type { RelocationSite } from '../data/relocationData';
 
+import { useLocation } from 'react-router-dom';
+
 export const RelocationPlanner = () => {
+  const locationState = useLocation().state as { selectedHabitationId?: string } | null;
   const [currentStep, setCurrentStep] = useState(3); // Start at "Safe Candidates" for demo
   
-  // Use Village A for demo
-  const sourceHabitation = triageData[0]; 
+  // Use passed habitation or fallback to Village A for demo
+  const sourceHabitation = triageData.find(t => t.id === locationState?.selectedHabitationId) || triageData[0];
 
   const [selectedSiteIds, setSelectedSiteIds] = useState<string[]>(['site-b', 'site-d']);
   const [viewSite, setViewSite] = useState<RelocationSite | null>(null);

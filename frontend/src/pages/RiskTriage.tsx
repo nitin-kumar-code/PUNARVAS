@@ -3,11 +3,11 @@ import { TriageFilters } from '../components/risk/TriageFilters';
 import { PrioritySummary } from '../components/risk/PrioritySummary';
 import { PriorityHabitationsTable } from '../components/risk/PriorityHabitationsTable';
 import { SelectedHabitationPanel } from '../components/risk/SelectedHabitationPanel';
-import { RelocationPlanModal } from '../components/dashboard/RelocationPlanModal';
+import { useNavigate } from 'react-router-dom';
 import { triageData } from '../data/triageData';
 
 export const RiskTriage = () => {
-  const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Filter state
   const [hazardFilter, setHazardFilter] = useState('All');
@@ -82,16 +82,14 @@ export const RiskTriage = () => {
           <PriorityHabitationsTable data={filteredData} selectedId={selectedId} onSelect={setSelectedId} />
         </div>
 
-        {/* Details - 35% */}
+        {/* Details - 40% */}
         <div className="w-full lg:flex-1 h-full">
           <SelectedHabitationPanel 
             habitation={selectedHabitation} 
-            onOpenRelocation={() => setModalOpen(true)} 
+            onOpenRelocation={() => navigate('/relocation', { state: { selectedHabitationId: selectedId } })} 
           />
         </div>
       </div>
-
-      <RelocationPlanModal isOpen={modalOpen} onClose={() => setModalOpen(false)} initialHabitationId={selectedId} />
     </div>
   );
 };

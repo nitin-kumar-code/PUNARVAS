@@ -3,15 +3,14 @@ import { Filter, Plus } from 'lucide-react';
 import { MapControlPanel } from '../components/map/MapControlPanel';
 import { GISMap } from '../components/map/GISMap';
 import { SelectedLocationPanel } from '../components/map/SelectedLocationPanel';
-import { RelocationPlanModal } from '../components/dashboard/RelocationPlanModal';
 import { mapLocations } from '../data/mapData';
 import type { MapLocation } from '../data/mapData';
 
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const MapInterface = () => {
+  const navigate = useNavigate();
   const locationState = useLocation().state as { selectedLocationId?: string } | null;
-  const [modalOpen, setModalOpen] = useState(false);
   const defaultLocation = mapLocations.find(l => l.id === locationState?.selectedLocationId) || mapLocations[0];
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(defaultLocation);
   
@@ -51,7 +50,7 @@ export const MapInterface = () => {
             Filters
           </button>
           <button 
-            onClick={() => setModalOpen(true)}
+            onClick={() => navigate('/relocation')}
             className="flex items-center gap-2 bg-punarvas-primary-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -83,8 +82,6 @@ export const MapInterface = () => {
           </div>
         </div>
       </div>
-
-      <RelocationPlanModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 };
