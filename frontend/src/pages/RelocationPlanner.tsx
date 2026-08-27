@@ -10,10 +10,11 @@ import { triageData } from '../data/triageData';
 import { relocationSites } from '../data/relocationData';
 import type { RelocationSite } from '../data/relocationData';
 
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const RelocationPlanner = () => {
   const locationState = useLocation().state as { selectedHabitationId?: string } | null;
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(3); // Start at "Safe Candidates" for demo
   
   // Use passed habitation or fallback to Village A for demo
@@ -140,6 +141,17 @@ export const RelocationPlanner = () => {
         isSelected={viewSite ? selectedSiteIds.includes(viewSite.id) : false}
         onSelect={handleSelectSite}
       />
+      
+      {/* Bottom Action Bar */}
+      <div className="bg-white border-t border-slate-200 p-4 shrink-0 flex justify-end sticky bottom-0 mt-2 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <button 
+          onClick={() => navigate('/decision')}
+          className="bg-punarvas-safe-green hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-colors text-lg"
+        >
+          Generate Final Plan
+        </button>
+      </div>
+
     </div>
   );
 };

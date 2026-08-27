@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Shield, LayoutDashboard, Map as MapIcon, AlertTriangle, Users, BrainCircuit, Compass, Package, FileText, Activity } from 'lucide-react';
+import { Shield, LayoutDashboard, Map as MapIcon, AlertTriangle, Users, BrainCircuit, Compass, Package, FileText, Plus, Settings, LogOut } from 'lucide-react';
 
 export const Sidebar = () => {
   const mainNav = [
@@ -79,16 +79,19 @@ export const Sidebar = () => {
         </div>
       </div>
 
-      {/* System Status */}
-      <div className="p-4">
-        <div className="bg-punarvas-deep-navy border border-white/10 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-punarvas-safe-green animate-pulse" />
-            <span className="text-sm text-white font-medium">System Operational</span>
-          </div>
-          <p className="text-xs text-slate-400 mb-1">Last updated: <span className="text-slate-300 font-medium">14:32 IST</span></p>
-          <p className="text-[10px] text-slate-500">Data sources: Hazard • Population • Infrastructure</p>
-        </div>
+      {/* Bottom Actions */}
+      <div className="p-4 flex flex-col gap-2 border-t border-white/10 mt-2">
+        <NavLink to="/relocation" className="flex justify-center items-center gap-2 bg-punarvas-primary-blue text-white px-3 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-600 transition-colors shadow-md">
+          <Plus className="w-4 h-4" /> Generate Relocation Plan
+        </NavLink>
+        
+        <NavLink to="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-white/10 hover:text-white transition-colors">
+          <Settings className="w-5 h-5" /> Settings
+        </NavLink>
+        
+        <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-white/10 hover:text-white transition-colors text-left w-full">
+          <LogOut className="w-5 h-5" /> Log Out
+        </button>
       </div>
     </aside>
   );

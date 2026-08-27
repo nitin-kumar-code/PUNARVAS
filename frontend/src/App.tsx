@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard';
 import { MapInterface } from './pages/MapInterface';
 import { RiskTriage } from './pages/RiskTriage';
 import { RelocationPlanner } from './pages/RelocationPlanner';
+import { DecisionSupport } from './pages/DecisionSupport';
 
 function App() {
   return (
@@ -15,7 +16,7 @@ function App() {
           <Route path="map" element={<MapInterface />} />
           <Route path="risk" element={<RiskTriage />} />
           <Route path="relocation" element={<RelocationPlanner />} />
-          <Route path="decision" element={<div className="p-10 text-center"><h2 className="text-2xl font-bold text-slate-400">Decision Support (Coming Soon)</h2></div>} />
+          <Route path="decision" element={<DecisionSupport />} />
           <Route path="*" element={<div className="p-10 text-center"><h2 className="text-2xl font-bold text-slate-400">Under Construction</h2></div>} />
         </Route>
       </Routes>
