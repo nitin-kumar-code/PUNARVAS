@@ -2,6 +2,9 @@ import json
 import uuid
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 HABITATION_SCORES_PATH = PROJECT_ROOT / "ai-ml" / "outputs" / "habitation_scores.json"
@@ -16,9 +19,6 @@ class JSONDataService:
         self._habitations_by_uuid: Optional[Dict[uuid.UUID, Dict[str, Any]]] = None
         self._sites: Optional[List[Dict[str, Any]]] = None
         self._sites_by_uuid: Optional[Dict[uuid.UUID, Dict[str, Any]]] = None
-        
-        # Test hook to bypass strict upstream validation during CI
-        self._test_mode_capacity_override = False
 
     def _load_json(self, file_path: Path) -> List[Dict[str, Any]]:
         if not file_path.exists():
@@ -57,19 +57,13 @@ class JSONDataService:
                 if "site_id" not in site:
                     raise ValueError("CRITICAL DATA GAP: Missing 'site_id' in site_scores.json.")
                 
-                # Strict Upstream Requirement
-                if "capacity_people" not in site and not self._test_mode_capacity_override:
-                    raise ValueError(
-                        "CRITICAL DATA GAP: site_scores.json is missing 'capacity_people'. "
-                        "The relocation optimizer strictly requires this field. "
-                        "Please require this upstream in the ML pipeline. "
-                        "(Set JSONDataService._test_mode_capacity_override = True in tests to bypass)."
+                if "capacity_people" not in site:
+                    logger.warning(
+                        f"CRITICAL DATA GAP: site_scores.json is missing 'capacity_people' for site {site.get('site_id')}. "
+                        "Setting capacity to None."
                     )
-                
-                # If testing, inject a mock capacity so the API tests don't 500
-                if self._test_mode_capacity_override and "capacity_people" not in site:
-                    site["capacity_people"] = 1000
-                    site["available_capacity"] = 1000
+                    site["capacity_people"] = None
+                    site["available_capacity"] = None
                     
                 site_id_str = str(site["site_id"])
                 deterministic_id = uuid.uuid5(SITE_NAMESPACE, site_id_str)

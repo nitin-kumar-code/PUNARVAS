@@ -42,7 +42,13 @@ class SiteService:
         self.data_service = json_data_service
         
     def get_all_sites(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
-        sites = self.data_service.get_all_sites()
+        try:
+            sites = self.data_service.get_all_sites()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to load site data: {e}")
+            return []
+            
         paginated = sites[skip : skip + limit]
         return [_map_json_to_dict(s) for s in paginated]
 

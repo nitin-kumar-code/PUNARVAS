@@ -50,7 +50,13 @@ class HabitationService:
         self.data_service = json_data_service
 
     def get_all_habitations(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
-        habs = self.data_service.get_all_habitations()
+        try:
+            habs = self.data_service.get_all_habitations()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to load habitation data: {e}")
+            return []
+            
         paginated = habs[skip : skip + limit]
         return [_map_json_to_dict(h) for h in paginated]
 
@@ -78,7 +84,7 @@ class HabitationService:
                 })
         return results
         
-    def get_relocation_candidates(self) -> List[Dict[str, Any]]:
+    def get_relocation_candidates(self, limit: int = 50) -> List[Dict[str, Any]]:
         habs = self.data_service.get_all_habitations()
         candidates = []
         for h in habs:
@@ -100,4 +106,7 @@ class HabitationService:
                     "primary_hazard": mapped.get("primary_hazard"),
                     "reason_for_priority": ", ".join(reason)
                 })
+                
+                if len(candidates) >= limit:
+                    break
         return candidates

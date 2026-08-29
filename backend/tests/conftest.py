@@ -34,12 +34,4 @@ def db():
     yield db
     db.close()
 
-import pytest
-from app.services.json_data_service import json_data_service
 
-@pytest.fixture(autouse=True)
-def mock_capacity_for_tests():
-    """Bypass strict ML data requirements during tests."""
-    json_data_service._test_mode_capacity_override = True
-    yield
-    json_data_service._test_mode_capacity_override = False
