@@ -83,10 +83,13 @@ export function useHabitations() {
 
         setData(mappedData);
         setError(null);
+        setLoading(false);
       } catch (err: any) {
-        if (err.name === 'AbortError') return;
+        if (err.name === 'AbortError') {
+          // Do not update state if aborted, to prevent flashing empty UI in strict mode
+          return;
+        }
         setError(err);
-      } finally {
         setLoading(false);
       }
     };

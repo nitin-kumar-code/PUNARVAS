@@ -23,10 +23,12 @@ export function useMapData() {
         setHabitations(habData);
         setSites(siteData);
         setError(null);
+        setLoading(false);
       } catch (err: any) {
-        if (err.name === 'AbortError') return;
+        if (err.name === 'AbortError') {
+          return;
+        }
         setError(err);
-      } finally {
         setLoading(false);
       }
     };
