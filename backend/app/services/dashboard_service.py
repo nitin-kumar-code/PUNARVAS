@@ -1,13 +1,11 @@
-from sqlalchemy.orm import Session
 from app.services.habitation_service import HabitationService
 from app.services.site_service import SiteService
 from app.models.enums import RiskLevel, SiteStatus
 
 class DashboardService:
-    def __init__(self, db: Session = None):
-        self.db = db
-        self.hab_service = HabitationService(db)
-        self.site_service = SiteService(db)
+    def __init__(self):
+        self.hab_service = HabitationService()
+        self.site_service = SiteService()
 
     def get_summary(self):
         # We need all records, so use a high limit
@@ -38,18 +36,31 @@ class DashboardService:
         high_pop = sum(h.get("total_population", 0) or 0 for h in habs if h.get("risk_level") == RiskLevel.HIGH)
         immediate_relocation = critical_pop # Based on critical pop
         
-        # Capacities
-        # Using status == SiteStatus.ACTIVE based on site_service mapping of "safe"
-        safe_relocation_capacity = sum(s.get("capacity_people", 0) or 0 for s in sites if s.get("status") == SiteStatus.ACTIVE)
-        available_relocation_capacity = sum(s.get("available_capacity", 0) or 0 for s in sites if s.get("status") == SiteStatus.ACTIVE)
+        # Capacities — surface None when ML data doesn't provide capacity_people,
+        # rather than silently computing 0. Mirrors the vulnerable_population pattern.
+        active_sites = [s for s in sites if s.get("status") == SiteStatus.ACTIVE]
+        capacity_values = [s.get("capacity_people") for s in active_sites]
+        available_values = [s.get("available_capacity") for s in active_sites]
+        
+        has_capacity_data = any(v is not None for v in capacity_values)
+        
+        if has_capacity_data:
+            safe_relocation_capacity = sum(v or 0 for v in capacity_values)
+            available_relocation_capacity = sum(v or 0 for v in available_values)
+        else:
+            safe_relocation_capacity = None
+            available_relocation_capacity = None
         
         # Average Risk Score
         scores = [h["risk_score"] for h in habs if h.get("risk_score") is not None]
         average_risk_score = round(sum(scores) / len(scores), 2) if scores else 0.0
         
-        # Relocation Coverage
+        # Relocation Coverage — null if capacity data is missing
         at_risk_pop = critical_pop + high_pop
-        relocation_coverage = round((safe_relocation_capacity / at_risk_pop) * 100, 2) if at_risk_pop > 0 else 100.0
+        if safe_relocation_capacity is not None and at_risk_pop > 0:
+            relocation_coverage = round((safe_relocation_capacity / at_risk_pop) * 100, 2)
+        else:
+            relocation_coverage = None
         
         # Priorities (top 5)
         sorted_habs = sorted([h for h in habs if h.get("risk_score") is not None], key=lambda x: x["risk_score"], reverse=True)

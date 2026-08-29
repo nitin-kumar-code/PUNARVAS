@@ -1,8 +1,8 @@
 import { useState, useEffect, Fragment } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ChevronDown, Layers } from 'lucide-react';
-import { habitations } from '../../data/mockData';
+import { ChevronDown, Layers, Loader2, AlertTriangle } from 'lucide-react';
+import { useMapData } from '../../hooks/useMapData';
 import L from 'leaflet';
 
 // Fix Leaflet default icon issue in React
@@ -15,10 +15,10 @@ L.Icon.Default.mergeOptions({
 
 const getRiskColor = (level: string) => {
   switch (level) {
-    case 'Critical': return '#E53935'; // punarvas-critical-red
-    case 'High': return '#FF8A00'; // punarvas-high-orange
-    case 'Medium': return '#F5B700'; // punarvas-medium-yellow
-    case 'Low': return '#18A957'; // punarvas-safe-green
+    case 'CRITICAL': return '#E53935'; // punarvas-critical-red
+    case 'HIGH': return '#FF8A00'; // punarvas-high-orange
+    case 'MEDIUM': return '#F5B700'; // punarvas-medium-yellow
+    case 'LOW': return '#18A957'; // punarvas-safe-green
     case 'Safe': return '#18A957';
     default: return '#1464E8';
   }
@@ -26,7 +26,8 @@ const getRiskColor = (level: string) => {
 
 export const RiskMapCard = () => {
   const [layersOpen, setLayersOpen] = useState(false);
-  const center: [number, number] = [27.71, 85.32]; // Centered around mock data
+  const { habitations, sites, loading, error } = useMapData();
+  const center: [number, number] = [30.3, 79.3]; // Centered around Chamoli, Uttarakhand
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[500px]">
@@ -55,38 +56,52 @@ export const RiskMapCard = () => {
       </div>
 
       <div className="flex-1 relative z-0">
-        <MapContainer center={center} zoom={12} className="w-full h-full" zoomControl={false}>
+        {loading && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80">
+            <Loader2 className="w-8 h-8 animate-spin text-punarvas-primary-blue" />
+          </div>
+        )}
+        
+        {error && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80">
+            <div className="flex flex-col items-center text-red-500 bg-white p-4 rounded shadow-lg border border-red-100">
+              <AlertTriangle className="w-8 h-8 mb-2" />
+              <p className="font-medium">Failed to load map data</p>
+            </div>
+          </div>
+        )}
+
+        <MapContainer center={center} zoom={10} className="w-full h-full" zoomControl={false}>
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           />
           
-          {habitations.map((hab) => (
+          {!loading && habitations.map((hab) => (
             <Fragment key={hab.id}>
-              {/* Highlight area */}
               <Circle
-                center={hab.coordinates}
-                radius={hab.riskLevel === 'Safe' ? 800 : 1200}
+                center={[hab.latitude, hab.longitude]}
+                radius={800}
                 pathOptions={{
-                  fillColor: getRiskColor(hab.riskLevel),
+                  fillColor: getRiskColor(hab.risk_level),
                   fillOpacity: 0.2,
-                  color: getRiskColor(hab.riskLevel),
+                  color: getRiskColor(hab.risk_level),
                   weight: 1,
                   opacity: 0.4
                 }}
               />
-              <Marker position={hab.coordinates}>
+              <Marker position={[hab.latitude, hab.longitude]}>
                 <Popup className="rounded-xl overflow-hidden">
                   <div className="p-1 min-w-[200px]">
                     <h4 className="font-bold text-sm text-punarvas-text mb-1">{hab.name}</h4>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className={`w-2 h-2 rounded-full`} style={{ backgroundColor: getRiskColor(hab.riskLevel) }} />
-                      <span className="text-xs font-semibold text-slate-600">{hab.riskLevel} Risk</span>
+                      <span className={`w-2 h-2 rounded-full`} style={{ backgroundColor: getRiskColor(hab.risk_level) }} />
+                      <span className="text-xs font-semibold text-slate-600">{hab.risk_level} Risk</span>
                     </div>
                     <div className="space-y-1.5 text-xs text-slate-600">
                       <div className="flex justify-between">
-                        <span>Risk Index:</span>
-                        <span className="font-semibold text-slate-900">{hab.riskIndex}</span>
+                        <span>Risk Score:</span>
+                        <span className="font-semibold text-slate-900">{hab.risk_score}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Population:</span>
@@ -94,14 +109,46 @@ export const RiskMapCard = () => {
                       </div>
                       <div className="flex justify-between">
                         <span>Vulnerable:</span>
-                        <span className="font-semibold text-punarvas-critical-red">{hab.vulnerablePopulation}</span>
+                        <span className="font-semibold text-punarvas-critical-red">{hab.vulnerable_population ?? 0}</span>
                       </div>
                     </div>
-                    {hab.riskLevel !== 'Safe' && (
-                      <button className="w-full mt-3 bg-punarvas-primary-blue text-white py-1.5 rounded text-xs font-semibold hover:bg-blue-700 transition-colors">
-                        Action Required
-                      </button>
-                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            </Fragment>
+          ))}
+
+          {!loading && sites.map((site) => (
+            <Fragment key={site.id}>
+              <Circle
+                center={[site.latitude, site.longitude]}
+                radius={1200}
+                pathOptions={{
+                  fillColor: getRiskColor('Safe'),
+                  fillOpacity: 0.2,
+                  color: getRiskColor('Safe'),
+                  weight: 1,
+                  opacity: 0.4
+                }}
+              />
+              <Marker position={[site.latitude, site.longitude]}>
+                <Popup className="rounded-xl overflow-hidden">
+                  <div className="p-1 min-w-[200px]">
+                    <h4 className="font-bold text-sm text-punarvas-text mb-1">{site.name}</h4>
+                    <div className="flex items-center gap-2 mb-3">
+                      <ShieldCheckIcon className="w-3.5 h-3.5 text-punarvas-safe-green" />
+                      <span className="text-xs font-semibold text-slate-600">Safe Site ({site.status})</span>
+                    </div>
+                    <div className="space-y-1.5 text-xs text-slate-600">
+                      <div className="flex justify-between">
+                        <span>Safety Score:</span>
+                        <span className="font-semibold text-slate-900">{site.overall_safety_score}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Available Cap:</span>
+                        <span className="font-semibold text-punarvas-safe-green">{site.available_capacity ?? 0}</span>
+                      </div>
+                    </div>
                   </div>
                 </Popup>
               </Marker>

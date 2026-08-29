@@ -10,6 +10,8 @@ from app.services.habitation_service import HabitationService
 
 router = APIRouter()
 
+# --- DB-dependent routes (RiskService, RelocationService, DecisionService use ORM) ---
+
 @router.get("/risks/{id}", response_model=RiskAssessmentSchema)
 def read_risk_assessment(id: UUID, db: Session = Depends(get_db)):
     db_risk = db.query(RiskAssessment).filter(RiskAssessment.id == id).first()
@@ -22,14 +24,16 @@ def create_risk_assessment(request: RiskAssessmentRequest, db: Session = Depends
     service = RiskService(db)
     return service.create_assessment(request.habitation_id, request.features)
 
+# --- JSON-backed routes (HabitationService reads from JSON, no DB needed) ---
+
 @router.get("/risk-zones")
-def get_risk_zones(db: Session = Depends(get_db)):
-    service = HabitationService(db)
+def get_risk_zones():
+    service = HabitationService()
     return service.get_risk_zones()
 
 @router.get("/risk-zones/{id}")
-def get_risk_zone_detail(id: UUID, db: Session = Depends(get_db)):
-    service = HabitationService(db)
+def get_risk_zone_detail(id: UUID):
+    service = HabitationService()
     zones = service.get_risk_zones()
     zone = next((z for z in zones if z["id"] == str(id)), None)
     if not zone:
@@ -37,9 +41,11 @@ def get_risk_zone_detail(id: UUID, db: Session = Depends(get_db)):
     return zone
 
 @router.get("/relocation/candidates")
-def get_relocation_candidates(db: Session = Depends(get_db)):
-    service = HabitationService(db)
+def get_relocation_candidates():
+    service = HabitationService()
     return service.get_relocation_candidates()
+
+# --- DB-dependent routes (continued) ---
 
 from app.schemas.intelligence import RelocationRecommendationRequest
 from app.optimization.schemas import OptimizerOutput

@@ -1,16 +1,44 @@
 import { useState, useEffect } from 'react';
-import { riskDistribution } from '../../data/mockData';
-import { PieChart } from 'lucide-react';
+import { useDashboardSummary } from '../../hooks/useDashboardSummary';
+import { PieChart, Loader2, AlertTriangle } from 'lucide-react';
 
 export const RiskDistribution = () => {
+  const { data, loading, error } = useDashboardSummary();
   const [animated, setAnimated] = useState(false);
   
   useEffect(() => {
-    const timer = setTimeout(() => setAnimated(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
+    if (data && !loading) {
+      const timer = setTimeout(() => setAnimated(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [data, loading]);
 
-  const total = riskDistribution.reduce((acc, curr) => acc + curr.count, 0);
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 h-full flex items-center justify-center min-h-[300px]">
+        <Loader2 className="w-8 h-8 animate-spin text-punarvas-primary-blue" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 h-full flex flex-col items-center justify-center text-center min-h-[300px]">
+        <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
+        <p className="text-red-600 font-medium">Failed to load risk distribution</p>
+      </div>
+    );
+  }
+
+  const dist = data.risk_distribution;
+  const total = dist.critical + dist.high + dist.medium + dist.low;
+
+  const distributionData = [
+    { level: 'Critical', count: dist.critical, color: 'bg-red-600' },
+    { level: 'High', count: dist.high, color: 'bg-orange-500' },
+    { level: 'Medium', count: dist.medium, color: 'bg-yellow-400' },
+    { level: 'Low', count: dist.low, color: 'bg-green-600' },
+  ];
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 h-full">
@@ -20,8 +48,8 @@ export const RiskDistribution = () => {
       </div>
       
       <div className="space-y-5">
-        {riskDistribution.map((item) => {
-          const percentage = Math.round((item.count / total) * 100);
+        {distributionData.map((item) => {
+          const percentage = total > 0 ? Math.round((item.count / total) * 100) : 0;
           
           return (
             <div key={item.level}>

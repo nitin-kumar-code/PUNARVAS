@@ -10,9 +10,9 @@ class CandidateSiteBase(BaseModel):
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
     
-    # Required capacity fields (enforced upstream)
-    capacity_people: int = Field(..., ge=0)
-    available_capacity: int = Field(..., ge=0)
+    # Capacity fields — Optional because ML JSON may not provide them
+    capacity_people: Optional[int] = Field(None, ge=0)
+    available_capacity: Optional[int] = Field(None, ge=0)
     
     # Keeping original schema fields with sensible defaults or Optional
     state: str = Field(default="Uttarakhand", min_length=1)

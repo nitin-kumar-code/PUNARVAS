@@ -1,13 +1,33 @@
-import { useState, useEffect } from 'react';
-import { kpiStats } from '../../data/mockData';
-import { Home, AlertTriangle, Activity, Users, ShieldCheck } from 'lucide-react';
+import { useDashboardSummary } from '../../hooks/useDashboardSummary';
+import { Home, AlertTriangle, Activity, Users, ShieldCheck, Loader2 } from 'lucide-react';
 
 export const KPIGrid = () => {
+  const { data, loading, error } = useDashboardSummary();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-32 mb-6">
+        <Loader2 className="w-8 h-8 animate-spin text-punarvas-primary-blue" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 border border-red-100 flex items-center">
+        <AlertTriangle className="w-5 h-5 mr-2" />
+        Failed to load key metrics.
+      </div>
+    );
+  }
+
+  const atRiskCount = data.critical_habitations + data.risk_distribution.high;
+
   const cards = [
     {
       title: 'AT-RISK HABITATIONS',
-      value: kpiStats.atRiskHabitations,
-      subValue: '8 Critical',
+      value: atRiskCount,
+      subValue: `${data.critical_habitations} Critical`,
       icon: Home,
       color: 'text-punarvas-primary-blue',
       bgColor: 'bg-blue-50',
@@ -16,7 +36,7 @@ export const KPIGrid = () => {
     },
     {
       title: 'CRITICAL ZONES',
-      value: String(kpiStats.criticalZones).padStart(2, '0'),
+      value: String(data.critical_habitations).padStart(2, '0'),
       subValue: 'Immediate attention',
       icon: AlertTriangle,
       color: 'text-punarvas-critical-red',
@@ -26,7 +46,7 @@ export const KPIGrid = () => {
     },
     {
       title: 'IMMEDIATE RELOCATION',
-      value: kpiStats.immediateRelocation,
+      value: data.immediate_relocation.toLocaleString(),
       subValue: 'People requiring action',
       icon: Activity,
       color: 'text-punarvas-high-orange',
@@ -36,7 +56,7 @@ export const KPIGrid = () => {
     },
     {
       title: 'VULNERABLE POPULATION',
-      value: kpiStats.vulnerablePopulation.toLocaleString(),
+      value: (data.vulnerable_population ?? 0).toLocaleString(),
       subValue: 'People identified',
       icon: Users,
       color: 'text-punarvas-primary-blue',
@@ -46,7 +66,7 @@ export const KPIGrid = () => {
     },
     {
       title: 'SAFE RELOCATION CAPACITY',
-      value: kpiStats.safeRelocationCapacity.toLocaleString(),
+      value: (data.safe_relocation_capacity ?? 0).toLocaleString(),
       subValue: 'People accommodated',
       icon: ShieldCheck,
       color: 'text-punarvas-safe-green',

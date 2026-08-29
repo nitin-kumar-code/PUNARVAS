@@ -1,9 +1,9 @@
 import React, { Fragment } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { mapLocations } from '../../data/mapData';
-import type { MapLocation } from '../../data/mapData';
+import type { MapHabitation, MapSite } from '../../types/api';
 import L from 'leaflet';
+import { Loader2 } from 'lucide-react';
 
 // Fix Leaflet default icon issue in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -28,22 +28,27 @@ const createCustomIcon = (color: string) => {
   });
 };
 
-const icons = {
-  Critical: createCustomIcon('#E53935'),
-  High: createCustomIcon('#FF8A00'),
-  Medium: createCustomIcon('#F5B700'),
-  Low: createCustomIcon('#18A957'),
+const icons: Record<string, L.DivIcon> = {
+  CRITICAL: createCustomIcon('#E53935'),
+  HIGH: createCustomIcon('#FF8A00'),
+  MEDIUM: createCustomIcon('#F5B700'),
+  LOW: createCustomIcon('#18A957'),
   Safe: createCustomIcon('#18A957'),
 };
 
+const getIconForLevel = (level: string) => icons[level] || icons['LOW'];
+
 interface GISMapProps {
   filters: any;
-  onLocationSelect: (location: MapLocation | null) => void;
+  onLocationSelect: (location: MapHabitation | MapSite | null) => void;
   selectedLocationId: string | null;
+  habitations: MapHabitation[];
+  sites: MapSite[];
+  loading?: boolean;
 }
 
-export const GISMap = ({ filters, onLocationSelect, selectedLocationId }: GISMapProps) => {
-  const center: [number, number] = [23.82, 91.28]; // Centered around Agartala
+export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitations, sites, loading }: GISMapProps) => {
+  const center: [number, number] = [30.3, 79.3]; // Centered around Chamoli
 
   // Define realistic hazard overlays
   const hazardOverlays = [
@@ -51,32 +56,49 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId }: GISMap
       type: 'flood',
       visible: filters.hazards.flood,
       elements: [
-        <Polyline key="f1" positions={[[23.85, 91.22], [23.83, 91.28], [23.80, 91.35]]} color="#3b82f6" weight={40} opacity={0.3} />
+        <Polyline key="f1" positions={[[30.4, 79.2], [30.35, 79.25], [30.2, 79.4]]} color="#3b82f6" weight={40} opacity={0.3} />
       ]
     },
     {
       type: 'earthquake',
       visible: filters.hazards.earthquake,
       elements: [
-        <Polyline key="e1" positions={[[23.90, 91.20], [23.75, 91.30]]} color="#ef4444" weight={3} dashArray="10, 10" />
+        <Polyline key="e1" positions={[[30.5, 79.1], [30.1, 79.5]]} color="#ef4444" weight={3} dashArray="10, 10" />
       ]
     },
     {
       type: 'landslide',
       visible: filters.hazards.landslide,
       elements: [
-        <Circle key="l1" center={[23.79, 91.32]} radius={3000} pathOptions={{ fillColor: '#f97316', fillOpacity: 0.3, color: 'transparent' }} />
+        <Circle key="l1" center={[30.35, 79.35]} radius={3000} pathOptions={{ fillColor: '#f97316', fillOpacity: 0.3, color: 'transparent' }} />
       ]
     }
   ];
 
-  const filteredLocations = React.useMemo(() => {
-    return mapLocations.filter(loc => filters.severity[loc.riskLevel] !== false);
-  }, [filters.severity]);
+  const mapSeverity = (level: string) => {
+    if (level === 'CRITICAL') return 'Critical';
+    if (level === 'HIGH') return 'High';
+    if (level === 'MEDIUM') return 'Medium';
+    if (level === 'LOW') return 'Low';
+    return 'Low';
+  };
+
+  const filteredHabitations = React.useMemo(() => {
+    return habitations.filter(loc => filters.severity[mapSeverity(loc.risk_level)] !== false);
+  }, [filters.severity, habitations]);
+
+  const filteredSites = React.useMemo(() => {
+    return filters.severity['Safe'] !== false ? sites : [];
+  }, [filters.severity, sites]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full relative z-0">
-      <MapContainer center={center} zoom={11} className="w-full h-full" zoomControl={false}>
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80">
+          <Loader2 className="w-8 h-8 animate-spin text-punarvas-primary-blue" />
+        </div>
+      )}
+      <MapContainer center={center} zoom={10} className="w-full h-full" zoomControl={false}>
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -86,8 +108,8 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId }: GISMap
         {/* Render active hazard overlays */}
         {hazardOverlays.map(h => h.visible && h.elements)}
         
-        {/* Render Locations based on severity filter */}
-        {filteredLocations.map((loc) => (
+        {/* Render Habitations based on severity filter */}
+        {!loading && filteredHabitations.map((loc) => (
           <Fragment key={loc.id}>
             {/* Base layer population density representation */}
             {filters.baseLayer.populationDensity && (
@@ -95,9 +117,9 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId }: GISMap
                 center={[loc.latitude, loc.longitude]}
                 radius={Math.sqrt(loc.population) * 10}
                 pathOptions={{
-                  fillColor: loc.riskLevel === 'Critical' ? '#E53935' : loc.riskLevel === 'High' ? '#FF8A00' : '#F5B700',
+                  fillColor: loc.risk_level === 'CRITICAL' ? '#E53935' : loc.risk_level === 'HIGH' ? '#FF8A00' : '#F5B700',
                   fillOpacity: 0.15,
-                  color: loc.riskLevel === 'Critical' ? '#E53935' : loc.riskLevel === 'High' ? '#FF8A00' : '#F5B700',
+                  color: loc.risk_level === 'CRITICAL' ? '#E53935' : loc.risk_level === 'HIGH' ? '#FF8A00' : '#F5B700',
                   weight: 1,
                   dashArray: "4,4"
                 }}
@@ -106,17 +128,32 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId }: GISMap
             
             <Marker 
               position={[loc.latitude, loc.longitude]} 
-              icon={icons[loc.riskLevel]}
+              icon={getIconForLevel(loc.risk_level)}
               eventHandlers={{
                 click: () => onLocationSelect(loc),
               }}
             >
-              {/* Using a label/tooltip to show the name permanently next to the marker */}
               <Popup className="custom-popup" closeButton={false}>
                 <div className="font-semibold text-xs text-slate-800">{loc.name}</div>
               </Popup>
             </Marker>
           </Fragment>
+        ))}
+
+        {/* Render Sites */}
+        {!loading && filteredSites.map((site) => (
+          <Marker 
+            key={site.id}
+            position={[site.latitude, site.longitude]} 
+            icon={getIconForLevel('Safe')}
+            eventHandlers={{
+              click: () => onLocationSelect(site),
+            }}
+          >
+            <Popup className="custom-popup" closeButton={false}>
+              <div className="font-semibold text-xs text-slate-800">{site.name}</div>
+            </Popup>
+          </Marker>
         ))}
       </MapContainer>
 

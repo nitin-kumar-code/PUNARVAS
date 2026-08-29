@@ -1,3 +1,6 @@
+// TODO: This file is currently retained because CriticalAlerts.tsx still depends on it. 
+// Once CriticalAlerts is migrated to backend data, this file should be removed. 
+
 import type { Habitation, Alert, KPIStats } from '../types';
 
 export const kpiStats: KPIStats = {

@@ -3,16 +3,16 @@ import { Filter, Plus } from 'lucide-react';
 import { MapControlPanel } from '../components/map/MapControlPanel';
 import { GISMap } from '../components/map/GISMap';
 import { SelectedLocationPanel } from '../components/map/SelectedLocationPanel';
-import { mapLocations } from '../data/mapData';
-import type { MapLocation } from '../data/mapData';
+import { useMapData } from '../hooks/useMapData';
+import type { MapHabitation, MapSite } from '../types/api';
 
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export const MapInterface = () => {
   const navigate = useNavigate();
+  const { habitations, sites, loading } = useMapData();
   const locationState = useLocation().state as { selectedLocationId?: string } | null;
-  const defaultLocation = mapLocations.find(l => l.id === locationState?.selectedLocationId) || mapLocations[0];
-  const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(defaultLocation);
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(locationState?.selectedLocationId || null);
   
   const [filters, setFilters] = useState({
     baseLayer: {
@@ -32,9 +32,18 @@ export const MapInterface = () => {
       High: true,
       Medium: false,
       Low: false,
-      Safe: true, // Not explicitly in severity filter from prompt, but good to keep
+      Safe: true, 
     }
   });
+
+  // Find the selected location from either habitations or sites
+  const selectedLocation = React.useMemo(() => {
+    if (!selectedLocationId) return null;
+    const hab = habitations.find(h => h.id === selectedLocationId);
+    if (hab) return hab;
+    const site = sites.find(s => s.id === selectedLocationId);
+    return site || null;
+  }, [selectedLocationId, habitations, sites]);
 
   return (
     <div className="max-w-[1800px] mx-auto w-full h-[calc(100vh-6rem)] flex flex-col pb-4">
@@ -72,13 +81,16 @@ export const MapInterface = () => {
           <div className="flex-1 rounded-xl overflow-hidden relative">
             <GISMap 
               filters={filters} 
-              selectedLocationId={selectedLocation?.id || null} 
-              onLocationSelect={setSelectedLocation} 
+              selectedLocationId={selectedLocationId} 
+              onLocationSelect={(loc) => setSelectedLocationId(loc?.id || null)} 
+              habitations={habitations}
+              sites={sites}
+              loading={loading}
             />
           </div>
           
           <div className="shrink-0">
-            <SelectedLocationPanel location={selectedLocation} onClose={() => setSelectedLocation(null)} />
+            <SelectedLocationPanel location={selectedLocation} onClose={() => setSelectedLocationId(null)} />
           </div>
         </div>
       </div>
