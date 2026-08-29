@@ -35,6 +35,14 @@ export interface DashboardSummary {
   risk_distribution: RiskDistribution;
   priority_habitations: PriorityHabitation[];
   immediate_relocation_candidates: ImmediateRelocationCandidate[];
+  critical_alerts?: {
+    id: string;
+    title: string;
+    timeAgo: string;
+    vulnerablePeople: number;
+    riskLevel: 'Critical' | 'High' | 'Medium';
+    type: 'habitation' | 'site';
+  }[];
 }
 
 export interface MapHabitation {

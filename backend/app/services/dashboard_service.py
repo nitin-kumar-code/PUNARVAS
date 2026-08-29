@@ -75,6 +75,48 @@ class DashboardService:
             
         immediate_candidates = self.hab_service.get_relocation_candidates(limit=50)
 
+        # Generate Alerts
+        alerts = []
+        
+        # 1. Critical Habitations (Top 3)
+        for h in sorted_habs:
+            if h.get("risk_level") == RiskLevel.CRITICAL:
+                alerts.append({
+                    "id": f"hab_{h['id']}",
+                    "title": f"{h['name']}: {h.get('triage_level', 'Critical')} risk level",
+                    "timeAgo": "Just now",
+                    "vulnerablePeople": h.get("vulnerable_population", h.get("total_population", 0)),
+                    "riskLevel": "Critical",
+                    "type": "habitation"
+                })
+                if len(alerts) >= 3:
+                    break
+        
+        # 2. Unsafe Sites
+        unsafe_sites = [s for s in sites if s.get("status") == SiteStatus.UNSAFE]
+        for s in unsafe_sites[:2]:
+            alerts.append({
+                "id": f"site_{s['id']}",
+                "title": f"{s['name']}: Destination marked unsafe",
+                "timeAgo": "1 hr ago",
+                "vulnerablePeople": 0,
+                "riskLevel": "High",
+                "type": "site"
+            })
+            
+        # 3. High Risk Habitations (if not enough alerts)
+        if len(alerts) < 5:
+            high_habs = [h for h in sorted_habs if h.get("risk_level") == RiskLevel.HIGH]
+            for h in high_habs[:(5 - len(alerts))]:
+                alerts.append({
+                    "id": f"hab_{h['id']}",
+                    "title": f"{h['name']}: Elevated risk detected",
+                    "timeAgo": "3 hrs ago",
+                    "vulnerablePeople": h.get("vulnerable_population", h.get("total_population", 0)),
+                    "riskLevel": "High",
+                    "type": "habitation"
+                })
+
         return {
             "total_habitations": total_habitations,
             "critical_habitations": risk_distribution.get("critical", 0),
@@ -88,5 +130,6 @@ class DashboardService:
             "relocation_coverage": relocation_coverage,
             "risk_distribution": risk_distribution,
             "priority_habitations": priority_habitations,
-            "immediate_relocation_candidates": immediate_candidates
+            "immediate_relocation_candidates": immediate_candidates,
+            "critical_alerts": alerts
         }
