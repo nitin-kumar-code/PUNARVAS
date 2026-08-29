@@ -46,6 +46,13 @@ export interface MapHabitation {
   risk_level: string;
   population: number;
   vulnerable_population: number;
+  village_name?: string;
+  triage_level?: string;
+  confidence_score?: number;
+  hazard_component?: number;
+  exposure_component?: number;
+  vulnerability_component?: number;
+  explanation?: string;
 }
 
 export interface MapSite {
@@ -56,4 +63,10 @@ export interface MapSite {
   available_capacity: number | null;
   status: string;
   overall_safety_score: number;
+  site_name?: string;
+  hazard_score?: number;
+  site_safety_score?: number;
+  site_risk_score?: number;
+  site_tier?: string;
+  confidence_score?: number;
 }

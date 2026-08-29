@@ -1,9 +1,13 @@
-import { useState, useEffect, Fragment } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import { useState, useEffect, Fragment, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
-import { ChevronDown, Layers, Loader2, AlertTriangle } from 'lucide-react';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import { ChevronDown, Layers, Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useMapData } from '../../hooks/useMapData';
 import L from 'leaflet';
+import { MAP_CONFIG } from '../../config/mapConfig';
 
 // Fix Leaflet default icon issue in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -15,22 +19,120 @@ L.Icon.Default.mergeOptions({
 
 const getRiskColor = (level: string) => {
   switch (level) {
-    case 'CRITICAL': return '#E53935'; // punarvas-critical-red
-    case 'HIGH': return '#FF8A00'; // punarvas-high-orange
-    case 'MEDIUM': return '#F5B700'; // punarvas-medium-yellow
-    case 'LOW': return '#18A957'; // punarvas-safe-green
+    case 'CRITICAL': return '#E53935';
+    case 'HIGH': return '#FF8A00';
+    case 'MEDIUM': return '#F5B700';
+    case 'LOW': return '#18A957';
     case 'Safe': return '#18A957';
     default: return '#1464E8';
   }
 };
 
+const getRiskLevelFromScore = (score: number) => {
+  if (score >= 80) return 'CRITICAL';
+  if (score >= 60) return 'HIGH';
+  if (score >= 40) return 'MEDIUM';
+  return 'LOW';
+};
+
+const createCustomIcon = (color: string) => {
+  return new L.DivIcon({
+    className: 'custom-icon',
+    html: `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 21.5C12 21.5 20.5 15.5 20.5 9.5C20.5 4.80558 16.6944 1 12 1C7.30558 1 3.5 4.80558 3.5 9.5C3.5 15.5 12 21.5 12 21.5Z" fill="white" stroke="${color}" stroke-width="2"/>
+        <circle cx="12" cy="9.5" r="3.5" fill="${color}"/>
+      </svg>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 20],
+    popupAnchor: [0, -20],
+  });
+};
+
+const icons: Record<string, L.DivIcon> = {
+  CRITICAL: createCustomIcon('#E53935'),
+  HIGH: createCustomIcon('#FF8A00'),
+  MEDIUM: createCustomIcon('#F5B700'),
+  LOW: createCustomIcon('#18A957'),
+  Safe: createCustomIcon('#18A957'),
+};
+
+const getIconForLevel = (level: string) => icons[level] || icons['LOW'];
+
+const MapUpdater = ({ bounds }: { bounds: L.LatLngBounds | null }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20] });
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [map, bounds]);
+  
+  return null;
+};
+
+const MapZoomListener = ({ onZoomChange }: { onZoomChange: (z: number) => void }) => {
+  const map = useMapEvents({
+    zoomend: () => onZoomChange(map.getZoom()),
+  });
+  
+  useEffect(() => {
+    onZoomChange(map.getZoom());
+  }, [map, onZoomChange]);
+  
+  return null;
+};
+
 export const RiskMapCard = () => {
   const [layersOpen, setLayersOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(10);
   const { habitations, sites, loading, error } = useMapData();
-  const center: [number, number] = [30.3, 79.3]; // Centered around Chamoli, Uttarakhand
+
+  const bounds = useMemo(() => {
+    const coords: [number, number][] = [];
+    if (habitations) {
+      habitations.forEach(h => {
+        if (h.latitude && h.longitude && !isNaN(h.latitude) && !isNaN(h.longitude)) {
+          coords.push([h.latitude, h.longitude]);
+        }
+      });
+    }
+    if (sites) {
+      sites.forEach(s => {
+        if (s.latitude && s.longitude && !isNaN(s.latitude) && !isNaN(s.longitude)) {
+          coords.push([s.latitude, s.longitude]);
+        }
+      });
+    }
+    if (coords.length === 0) return null;
+    return L.latLngBounds(coords);
+  }, [habitations, sites]);
+
+  const hasData = bounds !== null;
+
+  const riskSurface = useMemo(() => {
+    const grid = new Map<string, { lat: number, lng: number, count: number, maxScore: number }>();
+    if (!habitations) return [];
+    habitations.forEach(hab => {
+      const rLat = Math.round(hab.latitude * 20) / 20; 
+      const rLng = Math.round(hab.longitude * 20) / 20;
+      const key = `${rLat}-${rLng}`;
+      const existing = grid.get(key) || { lat: rLat, lng: rLng, count: 0, maxScore: 0 };
+      existing.count++;
+      existing.maxScore = Math.max(existing.maxScore, hab.risk_score || 0);
+      grid.set(key, existing);
+    });
+    return Array.from(grid.values());
+  }, [habitations]);
+
+  const isLowZoom = zoomLevel < 10;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[500px]">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-[500px]">
       <div className="p-4 border-b border-slate-100 flex items-center justify-between z-10 bg-white">
         <h3 className="font-bold text-punarvas-text text-lg">Risk Map Overview</h3>
         <div className="relative">
@@ -55,7 +157,7 @@ export const RiskMapCard = () => {
         </div>
       </div>
 
-      <div className="flex-1 relative z-0">
+      <div className="flex-1 relative z-0 w-full h-full min-h-[300px]">
         {loading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80">
             <Loader2 className="w-8 h-8 animate-spin text-punarvas-primary-blue" />
@@ -71,90 +173,135 @@ export const RiskMapCard = () => {
           </div>
         )}
 
-        <MapContainer center={center} zoom={10} className="w-full h-full" zoomControl={false}>
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          />
-          
-          {!loading && habitations.map((hab) => (
-            <Fragment key={hab.id}>
-              <Circle
-                center={[hab.latitude, hab.longitude]}
-                radius={800}
-                pathOptions={{
-                  fillColor: getRiskColor(hab.risk_level),
-                  fillOpacity: 0.2,
-                  color: getRiskColor(hab.risk_level),
-                  weight: 1,
-                  opacity: 0.4
-                }}
-              />
-              <Marker position={[hab.latitude, hab.longitude]}>
-                <Popup className="rounded-xl overflow-hidden">
-                  <div className="p-1 min-w-[200px]">
-                    <h4 className="font-bold text-sm text-punarvas-text mb-1">{hab.name}</h4>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className={`w-2 h-2 rounded-full`} style={{ backgroundColor: getRiskColor(hab.risk_level) }} />
-                      <span className="text-xs font-semibold text-slate-600">{hab.risk_level} Risk</span>
-                    </div>
-                    <div className="space-y-1.5 text-xs text-slate-600">
-                      <div className="flex justify-between">
-                        <span>Risk Score:</span>
-                        <span className="font-semibold text-slate-900">{hab.risk_score}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Population:</span>
-                        <span className="font-semibold text-slate-900">{hab.population}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Vulnerable:</span>
-                        <span className="font-semibold text-punarvas-critical-red">{hab.vulnerable_population ?? 0}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            </Fragment>
-          ))}
+        {!loading && !hasData && !error && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80">
+            <div className="flex flex-col items-center text-slate-500 bg-white p-4 rounded shadow-lg border border-slate-200">
+              <AlertTriangle className="w-8 h-8 mb-2" />
+              <p className="font-medium">No geographic data available</p>
+            </div>
+          </div>
+        )}
 
-          {!loading && sites.map((site) => (
-            <Fragment key={site.id}>
+        {hasData && (
+          <MapContainer 
+            bounds={bounds} 
+            className="w-full h-full absolute inset-0" 
+            zoomControl={false}
+          >
+            <MapUpdater bounds={bounds} />
+            <MapZoomListener onZoomChange={setZoomLevel} />
+            <TileLayer
+              url={MAP_CONFIG.tileUrl}
+              attribution={MAP_CONFIG.attribution}
+            />
+            
+            {isLowZoom && riskSurface.map(cell => (
               <Circle
-                center={[site.latitude, site.longitude]}
-                radius={1200}
+                key={`surface-${cell.lat}-${cell.lng}`}
+                center={[cell.lat, cell.lng]}
+                radius={4000}
                 pathOptions={{
-                  fillColor: getRiskColor('Safe'),
-                  fillOpacity: 0.2,
-                  color: getRiskColor('Safe'),
-                  weight: 1,
-                  opacity: 0.4
+                  fillColor: getRiskColor(getRiskLevelFromScore(cell.maxScore)),
+                  fillOpacity: 0.35,
+                  color: 'transparent'
                 }}
-              />
-              <Marker position={[site.latitude, site.longitude]}>
-                <Popup className="rounded-xl overflow-hidden">
-                  <div className="p-1 min-w-[200px]">
-                    <h4 className="font-bold text-sm text-punarvas-text mb-1">{site.name}</h4>
-                    <div className="flex items-center gap-2 mb-3">
-                      <ShieldCheckIcon className="w-3.5 h-3.5 text-punarvas-safe-green" />
-                      <span className="text-xs font-semibold text-slate-600">Safe Site ({site.status})</span>
+              >
+                <Popup className="custom-popup rounded-xl">
+                  <div className="p-2 min-w-[150px]">
+                    <h4 className="font-bold text-sm text-punarvas-text mb-1">Model-Derived Risk Surface</h4>
+                    <div className="text-xs text-slate-600 mb-2">Aggregated Risk Zone</div>
+                    <div className="flex justify-between text-xs">
+                      <span>Habitations:</span>
+                      <span className="font-semibold text-slate-900">{cell.count}</span>
                     </div>
-                    <div className="space-y-1.5 text-xs text-slate-600">
-                      <div className="flex justify-between">
-                        <span>Safety Score:</span>
-                        <span className="font-semibold text-slate-900">{site.overall_safety_score}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Available Cap:</span>
-                        <span className="font-semibold text-punarvas-safe-green">{site.available_capacity ?? 0}</span>
-                      </div>
+                    <div className="flex justify-between text-xs">
+                      <span>Max Risk Score:</span>
+                      <span className="font-semibold text-punarvas-critical-red">{cell.maxScore}</span>
                     </div>
                   </div>
                 </Popup>
-              </Marker>
-            </Fragment>
-          ))}
-        </MapContainer>
+              </Circle>
+            ))}
+
+            {!isLowZoom && (
+              <MarkerClusterGroup disableClusteringAtZoom={14} maxClusterRadius={60} chunkedLoading={true}>
+                {habitations.map((hab) => {
+                  if (!hab.latitude || !hab.longitude || isNaN(hab.latitude) || isNaN(hab.longitude)) return null;
+                  return (
+                    <Marker 
+                      key={hab.id} 
+                      position={[hab.latitude, hab.longitude]}
+                      icon={getIconForLevel(hab.risk_level)}
+                    >
+                      <Popup className="rounded-xl overflow-hidden">
+                        <div className="p-1 min-w-[200px]">
+                          <h4 className="font-bold text-sm text-punarvas-text mb-1">{hab.village_name || hab.name}</h4>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className={`w-2 h-2 rounded-full`} style={{ backgroundColor: getRiskColor(hab.risk_level) }} />
+                            <span className="text-xs font-semibold text-slate-600">{hab.risk_level} Risk • {hab.triage_level || 'Pending'}</span>
+                          </div>
+                          <div className="space-y-1.5 text-xs text-slate-600 border-b border-slate-100 pb-2 mb-2">
+                            <div className="flex justify-between">
+                              <span>Risk Score:</span>
+                              <span className="font-semibold text-slate-900">{hab.risk_score}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Population:</span>
+                              <span className="font-semibold text-slate-900">{hab.population}</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5 text-xs text-slate-600">
+                            <div className="flex justify-between">
+                              <span>Hazard:</span>
+                              <span className="font-medium">{hab.hazard_component || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Vulnerability:</span>
+                              <span className="font-medium">{hab.vulnerability_component || 'N/A'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+              </MarkerClusterGroup>
+            )}
+
+            {sites.map((site) => {
+              if (!site.latitude || !site.longitude || isNaN(site.latitude) || isNaN(site.longitude)) return null;
+              const isSafe = site.status.toLowerCase() === 'approved' || site.status.toLowerCase() === 'active';
+              const siteColor = isSafe ? '#18A957' : '#E53935';
+              return (
+                <Marker 
+                  key={site.id} 
+                  position={[site.latitude, site.longitude]}
+                  icon={createCustomIcon(siteColor)}
+                >
+                  <Popup className="rounded-xl overflow-hidden">
+                    <div className="p-1 min-w-[200px]">
+                      <h4 className="font-bold text-sm text-punarvas-text mb-1">{site.site_name || site.name}</h4>
+                      <div className="flex items-center gap-2 mb-3">
+                        {isSafe ? <ShieldCheck className="w-3.5 h-3.5 text-punarvas-safe-green" /> : <AlertTriangle className="w-3.5 h-3.5 text-punarvas-critical-red" />}
+                        <span className="text-xs font-semibold text-slate-600">Safe Site ({site.status})</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs text-slate-600">
+                        <div className="flex justify-between">
+                          <span>Capacity:</span>
+                          <span className="font-semibold text-slate-900">{site.available_capacity || 'Unknown'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Safety Score:</span>
+                          <span className="font-semibold text-slate-900">{site.site_safety_score || site.overall_safety_score || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
+        )}
       </div>
 
       <div className="h-12 border-t border-slate-100 flex items-center justify-center gap-6 bg-white z-10 px-4">
@@ -167,7 +314,7 @@ export const RiskMapCard = () => {
         ].map(item => (
           <div key={item.label} className="flex items-center gap-2">
             {item.icon ? (
-              <ShieldCheckIcon className="w-3.5 h-3.5 text-punarvas-safe-green" />
+              <ShieldCheck className="w-3.5 h-3.5 text-punarvas-safe-green" />
             ) : (
               <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
             )}
@@ -178,13 +325,3 @@ export const RiskMapCard = () => {
     </div>
   );
 };
-
-// Dummy shield icon for legend since we can't easily import inside mapping
-function ShieldCheckIcon(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  );
-}

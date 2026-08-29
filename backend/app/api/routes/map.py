@@ -25,7 +25,14 @@ def get_map_habitations():
             "risk_score": hab["risk_score"],
             "risk_level": risk_level,
             "population": hab["total_population"],
-            "vulnerable_population": hab.get("vulnerable_population", 0)
+            "vulnerable_population": hab.get("vulnerable_population", 0),
+            "village_name": hab.get("village_name", hab["name"]),
+            "triage_level": hab.get("triage_level"),
+            "confidence_score": hab.get("confidence_score"),
+            "hazard_component": hab.get("hazard_component"),
+            "exposure_component": hab.get("exposure_component"),
+            "vulnerability_component": hab.get("vulnerability_component"),
+            "explanation": hab.get("explanation"),
         })
     return results
 
@@ -42,8 +49,14 @@ def get_map_sites():
             "latitude": site["latitude"],
             "longitude": site["longitude"],
             "available_capacity": site.get("available_capacity"),
-            "status": site["status"].value,
-            "overall_safety_score": site.get("overall_safety_score")
+            "status": site["status"].value if site.get("status") else "Unknown",
+            "overall_safety_score": site.get("overall_safety_score"),
+            "site_name": site["name"],
+            "hazard_score": site.get("hazard_score"),
+            "site_safety_score": site.get("overall_safety_score"),
+            "site_risk_score": site.get("site_risk_score"),
+            "site_tier": site.get("site_tier"),
+            "confidence_score": site.get("confidence_score")
         })
     return results
 

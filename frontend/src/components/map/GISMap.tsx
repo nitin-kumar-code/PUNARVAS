@@ -1,9 +1,13 @@
-import React, { Fragment } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, ZoomControl } from 'react-leaflet';
+import React, { Fragment, useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import type { MapHabitation, MapSite } from '../../types/api';
 import L from 'leaflet';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { MAP_CONFIG } from '../../config/mapConfig';
 
 // Fix Leaflet default icon issue in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -12,6 +16,24 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+const getRiskColor = (level: string) => {
+  switch (level) {
+    case 'CRITICAL': return '#E53935'; // punarvas-critical-red
+    case 'HIGH': return '#FF8A00'; // punarvas-high-orange
+    case 'MEDIUM': return '#F5B700'; // punarvas-medium-yellow
+    case 'LOW': return '#18A957'; // punarvas-safe-green
+    case 'Safe': return '#18A957';
+    default: return '#1464E8';
+  }
+};
+
+const getRiskLevelFromScore = (score: number) => {
+  if (score >= 80) return 'CRITICAL';
+  if (score >= 60) return 'HIGH';
+  if (score >= 40) return 'MEDIUM';
+  return 'LOW';
+};
 
 // Create custom icons based on risk level
 const createCustomIcon = (color: string) => {
@@ -47,34 +69,37 @@ interface GISMapProps {
   loading?: boolean;
 }
 
+const MapUpdater = ({ bounds }: { bounds: L.LatLngBounds | null }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [map, bounds]);
+  
+  return null;
+};
+
+const MapZoomListener = ({ onZoomChange }: { onZoomChange: (z: number) => void }) => {
+  const map = useMapEvents({
+    zoomend: () => onZoomChange(map.getZoom()),
+  });
+  
+  useEffect(() => {
+    onZoomChange(map.getZoom());
+  }, [map, onZoomChange]);
+  
+  return null;
+};
+
 export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitations, sites, loading }: GISMapProps) => {
-  const center: [number, number] = [30.3, 79.3]; // Centered around Chamoli
-
-  // Define realistic hazard overlays
-  const hazardOverlays = [
-    {
-      type: 'flood',
-      visible: filters.hazards.flood,
-      elements: [
-        <Polyline key="f1" positions={[[30.4, 79.2], [30.35, 79.25], [30.2, 79.4]]} color="#3b82f6" weight={40} opacity={0.3} />
-      ]
-    },
-    {
-      type: 'earthquake',
-      visible: filters.hazards.earthquake,
-      elements: [
-        <Polyline key="e1" positions={[[30.5, 79.1], [30.1, 79.5]]} color="#ef4444" weight={3} dashArray="10, 10" />
-      ]
-    },
-    {
-      type: 'landslide',
-      visible: filters.hazards.landslide,
-      elements: [
-        <Circle key="l1" center={[30.35, 79.35]} radius={3000} pathOptions={{ fillColor: '#f97316', fillOpacity: 0.3, color: 'transparent' }} />
-      ]
-    }
-  ];
-
+  const [zoomLevel, setZoomLevel] = useState<number>(10);
+  
   const mapSeverity = (level: string) => {
     if (level === 'CRITICAL') return 'Critical';
     if (level === 'HIGH') return 'High';
@@ -91,71 +116,219 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
     return filters.severity['Safe'] !== false ? sites : [];
   }, [filters.severity, sites]);
 
+  const bounds = React.useMemo(() => {
+    const coords: [number, number][] = [];
+    filteredHabitations.forEach(h => {
+      if (h.latitude && h.longitude && !isNaN(h.latitude) && !isNaN(h.longitude)) {
+        coords.push([h.latitude, h.longitude]);
+      }
+    });
+    filteredSites.forEach(s => {
+      if (s.latitude && s.longitude && !isNaN(s.latitude) && !isNaN(s.longitude)) {
+        coords.push([s.latitude, s.longitude]);
+      }
+    });
+    if (coords.length === 0) return null;
+    return L.latLngBounds(coords);
+  }, [filteredHabitations, filteredSites]);
+
+  const hasData = bounds !== null;
+
+  // Grid processing for low zoom
+  const riskSurface = React.useMemo(() => {
+    const grid = new Map<string, { lat: number, lng: number, count: number, maxScore: number }>();
+    filteredHabitations.forEach(hab => {
+      const rLat = Math.round(hab.latitude * 20) / 20; // roughly 5km grouping
+      const rLng = Math.round(hab.longitude * 20) / 20;
+      const key = `${rLat}-${rLng}`;
+      const existing = grid.get(key) || { lat: rLat, lng: rLng, count: 0, maxScore: 0 };
+      existing.count++;
+      existing.maxScore = Math.max(existing.maxScore, hab.risk_score || 0);
+      grid.set(key, existing);
+    });
+    return Array.from(grid.values());
+  }, [filteredHabitations]);
+
+  const isLowZoom = zoomLevel < 11;
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full relative z-0">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full relative z-0 min-h-[400px]">
       {loading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80">
           <Loader2 className="w-8 h-8 animate-spin text-punarvas-primary-blue" />
         </div>
       )}
-      <MapContainer center={center} zoom={10} className="w-full h-full" zoomControl={false}>
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        <ZoomControl position="bottomright" />
-        
-        {/* Render active hazard overlays */}
-        {hazardOverlays.map(h => h.visible && h.elements)}
-        
-        {/* Render Habitations based on severity filter */}
-        {!loading && filteredHabitations.map((loc) => (
-          <Fragment key={loc.id}>
-            {/* Base layer population density representation */}
-            {filters.baseLayer.populationDensity && (
-              <Circle
-                center={[loc.latitude, loc.longitude]}
-                radius={Math.sqrt(loc.population) * 10}
-                pathOptions={{
-                  fillColor: loc.risk_level === 'CRITICAL' ? '#E53935' : loc.risk_level === 'HIGH' ? '#FF8A00' : '#F5B700',
-                  fillOpacity: 0.15,
-                  color: loc.risk_level === 'CRITICAL' ? '#E53935' : loc.risk_level === 'HIGH' ? '#FF8A00' : '#F5B700',
-                  weight: 1,
-                  dashArray: "4,4"
-                }}
-              />
-            )}
-            
-            <Marker 
-              position={[loc.latitude, loc.longitude]} 
-              icon={getIconForLevel(loc.risk_level)}
-              eventHandlers={{
-                click: () => onLocationSelect(loc),
+
+      {!loading && !hasData && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80">
+          <div className="flex flex-col items-center text-slate-500 bg-white p-4 rounded shadow-lg border border-slate-200">
+            <AlertTriangle className="w-8 h-8 mb-2" />
+            <p className="font-medium">No geographic data available for current filters</p>
+          </div>
+        </div>
+      )}
+
+      {hasData && (
+        <MapContainer 
+          bounds={bounds} 
+          className="w-full h-full absolute inset-0" 
+          zoomControl={false}
+          maxZoom={18}
+        >
+          <MapUpdater bounds={bounds} />
+          <MapZoomListener onZoomChange={setZoomLevel} />
+          <TileLayer
+            url={MAP_CONFIG.tileUrl}
+            attribution={MAP_CONFIG.attribution}
+          />
+          <ZoomControl position="bottomright" />
+          
+          {/* Low Zoom: Aggregated Risk Surface */}
+          {isLowZoom && riskSurface.map(cell => (
+            <Circle
+              key={`surface-${cell.lat}-${cell.lng}`}
+              center={[cell.lat, cell.lng]}
+              radius={4000} // ~4km radius to fill grid visually
+              pathOptions={{
+                fillColor: getRiskColor(getRiskLevelFromScore(cell.maxScore)),
+                fillOpacity: 0.35,
+                color: 'transparent'
               }}
             >
-              <Popup className="custom-popup" closeButton={false}>
-                <div className="font-semibold text-xs text-slate-800">{loc.name}</div>
+              <Popup className="custom-popup rounded-xl">
+                <div className="p-2 min-w-[150px]">
+                  <h4 className="font-bold text-sm text-punarvas-text mb-1">Model-Derived Risk Surface</h4>
+                  <div className="text-xs text-slate-600 mb-2">Aggregated Risk Zone</div>
+                  <div className="flex justify-between text-xs">
+                    <span>Habitations:</span>
+                    <span className="font-semibold text-slate-900">{cell.count}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span>Max Risk Score:</span>
+                    <span className="font-semibold text-punarvas-critical-red">{cell.maxScore}</span>
+                  </div>
+                </div>
               </Popup>
-            </Marker>
-          </Fragment>
-        ))}
+            </Circle>
+          ))}
 
-        {/* Render Sites */}
-        {!loading && filteredSites.map((site) => (
-          <Marker 
-            key={site.id}
-            position={[site.latitude, site.longitude]} 
-            icon={getIconForLevel('Safe')}
-            eventHandlers={{
-              click: () => onLocationSelect(site),
-            }}
-          >
-            <Popup className="custom-popup" closeButton={false}>
-              <div className="font-semibold text-xs text-slate-800">{site.name}</div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+          {!isLowZoom && (
+            <MarkerClusterGroup disableClusteringAtZoom={14} maxClusterRadius={60} chunkedLoading={true}>
+              {filteredHabitations.map((loc) => {
+                if (!loc.latitude || !loc.longitude || isNaN(loc.latitude) || isNaN(loc.longitude)) return null;
+                return (
+                  <Marker 
+                    key={loc.id}
+                    position={[loc.latitude, loc.longitude]} 
+                    icon={getIconForLevel(loc.risk_level)}
+                    eventHandlers={{
+                      click: () => onLocationSelect(loc),
+                    }}
+                  >
+                    <Popup className="custom-popup rounded-xl">
+                      <div className="p-1 min-w-[220px]">
+                        <h4 className="font-bold text-sm text-punarvas-text mb-1">{loc.village_name || loc.name}</h4>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`w-2 h-2 rounded-full`} style={{ backgroundColor: getRiskColor(loc.risk_level) }} />
+                          <span className="text-xs font-semibold text-slate-600">{loc.risk_level} Risk • {loc.triage_level || 'Pending'}</span>
+                        </div>
+                        <div className="space-y-1.5 text-xs text-slate-600 border-b border-slate-100 pb-2 mb-2">
+                          <div className="flex justify-between">
+                            <span>Risk Score:</span>
+                            <span className="font-semibold text-slate-900">{loc.risk_score}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Population:</span>
+                            <span className="font-semibold text-slate-900">{loc.population}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Confidence:</span>
+                            <span className="font-semibold text-slate-500">{loc.confidence_score ? `${loc.confidence_score}%` : 'N/A'}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5 text-xs text-slate-600">
+                          <div className="flex justify-between">
+                            <span>Hazard:</span>
+                            <span className="font-medium">{loc.hazard_component || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Exposure:</span>
+                            <span className="font-medium">{loc.exposure_component || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Vulnerability:</span>
+                            <span className="font-medium">{loc.vulnerability_component || 'N/A'}</span>
+                          </div>
+                        </div>
+                        {loc.explanation && (
+                          <div className="mt-2 text-[10px] text-slate-500 italic bg-slate-50 p-1.5 rounded border border-slate-100">
+                            "{loc.explanation}"
+                          </div>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+            </MarkerClusterGroup>
+          )}
+
+          {/* Render Sites independent of clusters so they are always visible */}
+          {filteredSites.map((site) => {
+            if (!site.latitude || !site.longitude || isNaN(site.latitude) || isNaN(site.longitude)) return null;
+            // Status-based styling
+            const isSafe = site.status.toLowerCase() === 'approved' || site.status.toLowerCase() === 'active';
+            const siteColor = isSafe ? '#18A957' : '#E53935'; // Green for approved/active, red for rejected/unsafe
+            
+            return (
+              <Marker 
+                key={site.id}
+                position={[site.latitude, site.longitude]} 
+                icon={createCustomIcon(siteColor)}
+                eventHandlers={{
+                  click: () => onLocationSelect(site),
+                }}
+              >
+                <Popup className="custom-popup rounded-xl">
+                  <div className="p-1 min-w-[220px]">
+                    <h4 className="font-bold text-sm text-punarvas-text mb-1">{site.site_name || site.name}</h4>
+                    <div className="flex items-center gap-2 mb-3">
+                      {isSafe ? <ShieldCheck className="w-3.5 h-3.5 text-punarvas-safe-green" /> : <AlertTriangle className="w-3.5 h-3.5 text-punarvas-critical-red" />}
+                      <span className="text-xs font-semibold text-slate-600">Safe Site ({site.status})</span>
+                    </div>
+                    <div className="space-y-1.5 text-xs text-slate-600">
+                      <div className="flex justify-between">
+                        <span>Capacity:</span>
+                        <span className="font-semibold text-slate-900">{site.available_capacity || 'Unknown'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Safety Score:</span>
+                        <span className="font-semibold text-slate-900">{site.site_safety_score || site.overall_safety_score || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Hazard Score:</span>
+                        <span className="font-medium">{site.hazard_score || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Risk Score:</span>
+                        <span className="font-medium">{site.site_risk_score || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Tier:</span>
+                        <span className="font-medium">{site.site_tier || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Confidence:</span>
+                        <span className="font-semibold text-slate-500">{site.confidence_score ? `${site.confidence_score}%` : 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
+      )}
 
       {/* Map Legend (Floating) */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border border-slate-200 shadow-lg rounded-full px-5 py-2 z-[1000] flex gap-5">
@@ -166,13 +339,13 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
           { label: 'Low Risk', color: 'bg-punarvas-safe-green' },
           { label: 'Safe Site', color: 'bg-punarvas-safe-green', icon: true },
         ].map(item => (
-          <div key={item.label} className="flex items-center gap-1.5">
+          <div key={item.label} className="flex items-center gap-2">
             {item.icon ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3 text-punarvas-safe-green"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" /><path d="m9 12 2 2 4-4" /></svg>
+              <ShieldCheck className="w-3.5 h-3.5 text-punarvas-safe-green" />
             ) : (
-              <div className={`w-2 h-2 rounded-full ${item.color}`} />
+              <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
             )}
-            <span className="text-[10px] font-semibold text-slate-600">{item.label}</span>
+            <span className="text-xs font-medium text-slate-600">{item.label}</span>
           </div>
         ))}
       </div>
