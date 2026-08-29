@@ -1,8 +1,48 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { CloudRain, AlertTriangle, Waves, Sun } from 'lucide-react';
-import { hazardData } from '../../data/hazardData';
 
 export const RecentHazardEvents = () => {
+  const events = useMemo(() => {
+    const today = new Date();
+    
+    const formatDate = (daysAgo: number, timeStr: string) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - daysAgo);
+      return `${d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}, ${timeStr}`;
+    };
+
+    return [
+      {
+        id: "ev-1",
+        icon: "rain",
+        title: "Heavy Rainfall Event",
+        description: "Heavy rainfall recorded in catchment area.",
+        time: formatDate(0, "10:20 AM")
+      },
+      {
+        id: "ev-2",
+        icon: "landslide",
+        title: "Landslide Alert",
+        description: "Landslide risk increased due to saturation.",
+        time: formatDate(1, "08:15 PM")
+      },
+      {
+        id: "ev-3",
+        icon: "flood",
+        title: "Flood Risk Increase",
+        description: "Water levels rising in secondary basin.",
+        time: formatDate(2, "06:40 PM")
+      },
+      {
+        id: "ev-4",
+        icon: "heat",
+        title: "Heatwave Advisory",
+        description: "Heatwave expected in northern blocks.",
+        time: formatDate(3, "02:10 PM")
+      }
+    ];
+  }, []);
+
   const getIcon = (iconName: string) => {
     switch (iconName) {
       case 'rain': return <CloudRain className="w-5 h-5 text-punarvas-primary-blue" />;
@@ -26,7 +66,7 @@ export const RecentHazardEvents = () => {
       </div>
 
       <div className="p-2 flex-1 overflow-y-auto space-y-1">
-        {hazardData.recentEvents.map((event) => (
+        {events.map((event) => (
           <div key={event.id} className="p-3 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors flex items-start gap-4">
             <div className="p-2 bg-slate-100 rounded-lg shrink-0">
               {getIcon(event.icon)}

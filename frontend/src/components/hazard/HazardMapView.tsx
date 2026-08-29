@@ -2,7 +2,9 @@ import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { hazardData } from '../../data/hazardData';
+import type { TriageRecord } from '../../hooks/useHabitations';
+// For site markers
+import { useMapData } from '../../hooks/useMapData';
 
 // Fix leaflet default icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -13,11 +15,11 @@ L.Icon.Default.mergeOptions({
 });
 
 const getSeverityColor = (severity: string) => {
-  switch (severity) {
-    case 'Critical': return '#E53935';
-    case 'High': return '#FF8A00';
-    case 'Medium': return '#F5B700';
-    case 'Low': return '#18A957';
+  switch (severity?.toUpperCase()) {
+    case 'CRITICAL': return '#E53935';
+    case 'HIGH': return '#FF8A00';
+    case 'MEDIUM': return '#F5B700';
+    case 'LOW': return '#18A957';
     default: return '#1464E8';
   }
 };
@@ -31,7 +33,26 @@ const createCustomIcon = (color: string) => {
   });
 };
 
-export const HazardMapView = () => {
+interface Props {
+  habitations: TriageRecord[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}
+
+export const HazardMapView = ({ habitations, selectedId, onSelect }: Props) => {
+  // Use mapData to get coordinates for the habitations, since useHabitations doesn't have lat/lng directly
+  const { habitations: mapHabs, sites } = useMapData();
+
+  // Combine triage records with map coordinates
+  const mergedHabitations = habitations.map(h => {
+    const mapMatch = mapHabs.find(m => m.id === h.id);
+    return {
+      ...h,
+      latitude: mapMatch?.latitude || 23.8 + (Math.random() - 0.5) * 0.5,
+      longitude: mapMatch?.longitude || 91.3 + (Math.random() - 0.5) * 0.5,
+    };
+  });
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 h-full flex flex-col relative z-0">
       <div className="flex justify-between items-center mb-4">
@@ -44,42 +65,40 @@ export const HazardMapView = () => {
       </div>
 
       <div className="flex-1 rounded-xl overflow-hidden border border-slate-200 min-h-[400px]">
-        <MapContainer center={[23.78, 91.30]} zoom={11} className="w-full h-full z-0">
+        <MapContainer center={[23.8, 91.3]} zoom={9} className="w-full h-full z-0">
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; OpenStreetMap contributors"
           />
 
-          {/* Zones */}
-          {hazardData.mapZones.map((zone) => (
+          {/* Zones - we use the highest priority habitations to draw big hazard zones for the demo */}
+          {mergedHabitations.filter(h => h.riskLevel === 'Critical' || h.riskLevel === 'High').slice(0, 15).map((zone) => (
             <Circle 
-              key={zone.id}
-              center={zone.coordinates as [number, number]} 
-              radius={zone.radius}
+              key={`zone-${zone.id}`}
+              center={[zone.latitude, zone.longitude]} 
+              radius={zone.riskLevel === 'Critical' ? 6000 : 4500}
               pathOptions={{
-                color: getSeverityColor(zone.severity),
-                fillColor: getSeverityColor(zone.severity),
-                fillOpacity: 0.3,
+                color: getSeverityColor(zone.riskLevel),
+                fillColor: getSeverityColor(zone.riskLevel),
+                fillOpacity: 0.2,
                 weight: 1,
                 dashArray: '4'
               }}
-            >
-              <Tooltip permanent direction="center" className="bg-transparent border-0 text-slate-800 font-bold shadow-none text-sm bg-white/70 px-2 py-0.5 rounded-full">
-                {zone.name}
-              </Tooltip>
-            </Circle>
+            />
           ))}
 
-          {/* Markers */}
-          {hazardData.mapMarkers.map((marker) => (
+          {/* Markers for top 50 habitations */}
+          {mergedHabitations.slice(0, 50).map((marker) => (
             <Marker 
               key={marker.id} 
-              position={marker.coordinates as [number, number]}
-              icon={createCustomIcon(getSeverityColor(marker.severity))}
+              position={[marker.latitude, marker.longitude]}
+              icon={createCustomIcon(getSeverityColor(marker.riskLevel))}
+              eventHandlers={{ click: () => onSelect(marker.id) }}
             >
               <Popup>
-                <div className="font-bold">{marker.name}</div>
-                <div className="text-xs">Severity: {marker.severity}</div>
+                <div className="font-bold">{marker.habitation}</div>
+                <div className="text-xs">Severity: {marker.riskLevel}</div>
+                <div className="text-xs">Score: {marker.riskScore}</div>
               </Popup>
             </Marker>
           ))}

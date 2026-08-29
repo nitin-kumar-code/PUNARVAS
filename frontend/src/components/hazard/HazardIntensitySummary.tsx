@@ -1,9 +1,27 @@
-import React from 'react';
-import { hazardData } from '../../data/hazardData';
+import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import type { TriageRecord } from '../../hooks/useHabitations';
 
-export const HazardIntensitySummary = () => {
-  const { critical, high, medium, low, total } = hazardData.intensitySummary;
+interface Props {
+  habitations: TriageRecord[];
+}
+
+export const HazardIntensitySummary = ({ habitations }: Props) => {
+  const intensitySummary = useMemo(() => {
+    let critical = 0, high = 0, medium = 0, low = 0;
+    
+    habitations.forEach(h => {
+      const level = h.riskLevel?.toUpperCase();
+      if (level === 'CRITICAL') critical++;
+      else if (level === 'HIGH') high++;
+      else if (level === 'MEDIUM') medium++;
+      else if (level === 'LOW') low++;
+    });
+
+    return { critical, high, medium, low, total: critical + high + medium + low };
+  }, [habitations]);
+
+  const { critical, high, medium, low, total } = intensitySummary;
   
   const data = [
     { name: 'Critical', value: critical, color: '#E53935' },
@@ -46,7 +64,7 @@ export const HazardIntensitySummary = () => {
                 <span className="text-[10px] font-bold text-slate-700">{item.name}</span>
               </div>
               <div className="text-[10px] font-semibold text-slate-500">
-                {Math.round((item.value / total) * 100)}% ({item.value})
+                {total > 0 ? Math.round((item.value / total) * 100) : 0}% ({item.value})
               </div>
             </div>
           ))}

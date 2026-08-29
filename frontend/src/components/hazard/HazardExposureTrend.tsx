@@ -1,17 +1,28 @@
-import React from 'react';
-import { hazardData } from '../../data/hazardData';
+import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const HazardExposureTrend = () => {
-  const { dates, critical, high, medium, low } = hazardData.exposureTrend;
-  
-  const data = dates.map((date, i) => ({
-    date,
-    critical: critical[i],
-    high: high[i],
-    medium: medium[i],
-    low: low[i]
-  }));
+  const data = useMemo(() => {
+    // Generate dates dynamically for the last 30 days
+    const result = [];
+    const today = new Date();
+    
+    // We'll generate 9 data points spaced over 30 days for readability (like the original mock)
+    for (let i = 8; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(today.getDate() - (i * 3));
+      const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }); // e.g. "20 Apr"
+      
+      result.push({
+        date: dateStr,
+        critical: Math.floor(65 + Math.random() * 20),
+        high: Math.floor(45 + Math.random() * 15),
+        medium: Math.floor(30 + Math.random() * 15),
+        low: Math.floor(10 + Math.random() * 10),
+      });
+    }
+    return result;
+  }, []);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

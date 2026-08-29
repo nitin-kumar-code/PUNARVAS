@@ -1,5 +1,6 @@
 import React from 'react';
-import type { TriageRecord } from '../../data/triageData';
+import { AlertTriangle, Users, MapPin } from 'lucide-react';
+import type { TriageRecord } from '../../hooks/useHabitations';
 
 export const SourceHabitationCard = ({ habitation }: { habitation: TriageRecord }) => {
   return (

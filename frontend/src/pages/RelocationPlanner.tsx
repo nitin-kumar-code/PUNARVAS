@@ -9,10 +9,11 @@ import { SiteDetailsModal } from '../components/relocation/SiteDetailsModal';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { generateRelocationPlan, fetchSites, fetchHabitation } from '../api/relocation';
 import type { RelocationSite } from '../data/relocationData';
-import type { TriageRecord } from '../data/triageData';
+import { useHabitations } from '../hooks/useHabitations';
+import type { TriageRecord } from '../hooks/useHabitations';
 
 export const RelocationPlanner = () => {
-  const locationState = useLocation().state as { selectedHabitationId?: string } | null;
+  const locationState = useLocation().state as { selectedHabitation?: TriageRecord; selectedHabitationId?: string } | null;
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(3);
   
@@ -49,8 +50,9 @@ export const RelocationPlanner = () => {
         setRelocationSites(mappedSites);
 
         // We use a hardcoded fallback UUID if no state is passed, to not break the UI demo
-        // Sourced from triageData.ts equivalents if possible, but backend gives UUIDs.
-        if (locationState?.selectedHabitationId) {
+        if (locationState?.selectedHabitation) {
+          setSourceHabitation(locationState.selectedHabitation);
+        } else if (locationState?.selectedHabitationId) {
           const habData = await fetchHabitation(locationState.selectedHabitationId);
           setSourceHabitation({
             id: habData.id,
@@ -157,7 +159,11 @@ export const RelocationPlanner = () => {
   }, [allocationResult, relocationSites]);
 
   if (!sourceHabitation) {
-    return <div className="p-10">Loading relocation planner data... Please select a habitation from the map or dashboard first.</div>;
+    return (
+      <div className="max-w-[1800px] mx-auto w-full h-[calc(100vh-6rem)] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-punarvas-primary-blue border-t-transparent rounded-full"></div>
+      </div>
+    );
   }
 
   return (
