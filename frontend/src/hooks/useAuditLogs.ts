@@ -108,12 +108,19 @@ const generateMockEvents = (): AuditEvent[] => {
     }
   );
 
-  // Generate an extra 121 mock events to hit the 128 total
+  // Generate an extra 121 mock events deterministically
   for (let i = 8; i <= 128; i++) {
-    const isToday = i < 24; // 17 more for today, to make 24 total today
-    const dateStr = isToday ? today : new Date(Date.now() - (i * 3600000)).toISOString().split('T')[0];
-    const hr = Math.floor(Math.random() * 24).toString().padStart(2, '0');
-    const min = Math.floor(Math.random() * 60).toString().padStart(2, '0');
+    const isToday = i < 25; // Events 8-24 are today (17 events) + 7 explicit = 24 total today
+    const daysAgo = isToday ? 0 : Math.ceil((i - 24) / 10); // Spreads events back across ~10 days deterministically
+    
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    
+    // Deterministic time: e.g., 10:00, 10:15, 10:30...
+    const hr = (8 + (i % 10)).toString().padStart(2, '0');
+    const min = ((i % 4) * 15).toString().padStart(2, '0');
+    
+    const dateStr = date.toISOString().split('T')[0];
     
     events.push({
       id: `ev-${i.toString().padStart(3, '0')}`,
@@ -181,6 +188,7 @@ export function useAuditLogs() {
 
   return {
     events: paginatedEvents,
+    filteredEvents,
     totalFiltered: filteredEvents.length,
     page,
     setPage,

@@ -9,6 +9,7 @@ import { DecisionTrace } from '../components/audit/DecisionTrace';
 export const AuditLogs = () => {
   const { 
     events, 
+    filteredEvents,
     totalFiltered, 
     page, 
     setPage, 
@@ -22,10 +23,9 @@ export const AuditLogs = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   const handleExport = () => {
-    // Mock export functionality
     const csvContent = "data:text/csv;charset=utf-8," 
       + "Timestamp,Event,Entity,Actor,Action,Status,Reference\n"
-      + events.map(e => `${e.timestamp},${e.eventLabel},${e.entityName},${e.actorName},"${e.action}",${e.status},${e.referenceId}`).join("\n");
+      + filteredEvents.map(e => `${e.timestamp},${e.eventLabel},${e.entityName},${e.actorName},"${e.action}",${e.status},${e.referenceId}`).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
