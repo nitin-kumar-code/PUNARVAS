@@ -8,6 +8,7 @@ import { RelocationPlanner } from './pages/RelocationPlanner';
 import { DecisionSupport } from './pages/DecisionSupport';
 import { HazardExplorer } from './pages/HazardExplorer';
 import { ResourceAllocation } from './pages/ResourceAllocation';
+import { AuditLogs } from './pages/AuditLogs';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="decision" element={<DecisionSupport />} />
           <Route path="hazard" element={<HazardExplorer />} />
           <Route path="resource" element={<ResourceAllocation />} />
+          <Route path="audit" element={<AuditLogs />} />
           <Route path="*" element={<div className="p-10 text-center"><h2 className="text-2xl font-bold text-slate-400">Under Construction</h2></div>} />
         </Route>
       </Routes>
