@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Shield, LayoutDashboard, Map as MapIcon, AlertTriangle, Users, BrainCircuit, Compass, Package, FileText, Plus, Settings, LogOut } from 'lucide-react';
 
