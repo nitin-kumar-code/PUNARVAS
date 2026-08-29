@@ -151,11 +151,20 @@ export const DecisionSupport = () => {
       <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex gap-3">
           <button 
-            onClick={() => setShowConfirmModal(true)}
+            onClick={() => navigate('/resource', { 
+              state: { 
+                population: decision.source.population,
+                destinations: decision.destinations.map(d => ({
+                  id: d.site,
+                  name: d.site,
+                  population: d.allocation
+                }))
+              } 
+            })}
             disabled={decision.status !== 'APPROVED / READY FOR EXECUTION'}
             className="disabled:opacity-50 disabled:cursor-not-allowed bg-punarvas-safe-green hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-colors text-lg"
           >
-            Execute Relocation Plan
+            Allocate Resources
           </button>
           <button className="bg-punarvas-dark-navy hover:bg-slate-800 text-white px-6 py-3 rounded-lg font-bold shadow-sm transition-colors">
             Export Receipt
