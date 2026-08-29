@@ -63,7 +63,7 @@ export const CandidateSites = ({ sites, selectedSites, onSelectSite, recommended
                   </div>
                 </div>
                 <div className="text-sm font-medium text-slate-500">
-                  Capacity: {site.capacity} households <span className="mx-2">•</span> Available: <span className="text-slate-800 font-bold">{site.availableCapacity}</span>
+                  Capacity: {site.capacity} people <span className="mx-2">•</span> Available: <span className="text-slate-800 font-bold">{site.availableCapacity}</span>
                 </div>
               </div>
 

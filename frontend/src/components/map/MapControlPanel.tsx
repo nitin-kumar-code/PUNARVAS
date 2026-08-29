@@ -35,14 +35,14 @@ export const MapControlPanel = ({ filters, setFilters }: MapControlPanelProps) =
         <div className="space-y-3">
           <div className="relative">
             <select className="w-full appearance-none bg-white border border-slate-200 text-sm rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-punarvas-primary-blue/20 focus:border-punarvas-primary-blue text-slate-700 font-medium">
-              <option>State (Tripura)</option>
-              <option>State (Assam)</option>
+              <option>State (Uttarakhand)</option>
+              <option>State (Himachal Pradesh)</option>
             </select>
             <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
           <input
             type="text"
-            defaultValue="Agartala"
+            defaultValue="Chamoli"
             className="w-full bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-punarvas-primary-blue/20 focus:border-punarvas-primary-blue text-slate-700 font-medium"
           />
         </div>
@@ -72,12 +72,7 @@ export const MapControlPanel = ({ filters, setFilters }: MapControlPanelProps) =
         <div className="space-y-3">
           {[
             { id: 'flood', label: 'Flood Exposure' },
-            { id: 'earthquake', label: 'Earthquake Faults' },
-            { id: 'landslide', label: 'Landslide Susceptibility' },
-            { id: 'volcano', label: 'Volcanic Eruptions' },
-            { id: 'tsunami', label: 'Tsunamis' },
-            { id: 'cyclone', label: 'Hurricanes/Cyclones/Typhoons' },
-            { id: 'drought', label: 'Droughts' },
+            { id: 'earthquake', label: 'Earthquake Faults' }
           ].map(hazard => (
             <label key={hazard.id} className="flex items-center gap-3 cursor-pointer group">
               <input 
