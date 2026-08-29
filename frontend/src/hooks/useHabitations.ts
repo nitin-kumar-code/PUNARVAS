@@ -56,7 +56,7 @@ export function useHabitations() {
         });
         
         // Map to TriageRecord expected by the frontend
-        const mappedData: TriageRecord[] = results.map(r => {
+        const mappedData: TriageRecord[] = results.map((r, i) => {
           let conf = 'Medium';
           if (r.confidence_score > 80) conf = 'High';
           else if (r.confidence_score < 50) conf = 'Low';

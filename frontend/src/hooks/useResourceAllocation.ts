@@ -21,8 +21,8 @@ export interface ResourceRecord {
 
 const DEFAULT_POPULATION = 1840;
 const DEFAULT_DESTINATIONS: DestinationAllocation[] = [
-  { id: 'site-b', name: 'Relocation Site B', population: 920 },
-  { id: 'site-d', name: 'Relocation Site D', population: 920 }
+  { id: 'site-b', name: 'Relocation Site B', population: 1000 },
+  { id: 'site-d', name: 'Relocation Site D', population: 840 }
 ];
 
 export function useResourceAllocation() {
