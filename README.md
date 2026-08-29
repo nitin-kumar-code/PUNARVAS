@@ -23,7 +23,12 @@ Navigate to the `backend` directory and set up your virtual environment:
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate
+
+# For Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+
+# For Mac/Linux:
+# source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 ```
