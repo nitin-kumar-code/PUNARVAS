@@ -10,13 +10,16 @@ interface TriageFiltersProps {
   setPendingRiskLevel: (v: string) => void;
   onApply: () => void;
   onReset: () => void;
+  availableDistricts: string[];
+  availableHazards: string[];
 }
 
 export const TriageFilters = ({
   pendingHazard, setPendingHazard,
   pendingDistrict, setPendingDistrict,
   pendingRiskLevel, setPendingRiskLevel,
-  onApply, onReset
+  onApply, onReset,
+  availableDistricts, availableHazards
 }: TriageFiltersProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-wrap items-center gap-4">
@@ -28,10 +31,7 @@ export const TriageFilters = ({
           className="appearance-none bg-white border border-slate-200 text-sm rounded-lg pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-punarvas-primary-blue/20 focus:border-punarvas-primary-blue text-slate-700 font-medium min-w-[160px]"
         >
           <option value="All">Hazard: All</option>
-          <option value="Landslide">Landslide</option>
-          <option value="Flood">Flood</option>
-          <option value="Earthquake">Earthquake</option>
-          <option value="Cyclone">Cyclone</option>
+          {availableHazards.map(h => <option key={h} value={h}>{h}</option>)}
         </select>
         <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
       </div>
@@ -44,11 +44,7 @@ export const TriageFilters = ({
           className="appearance-none bg-white border border-slate-200 text-sm rounded-lg pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-punarvas-primary-blue/20 focus:border-punarvas-primary-blue text-slate-700 font-medium min-w-[160px]"
         >
           <option value="All">District: All</option>
-          <option value="West Tripura">West Tripura</option>
-          <option value="South Tripura">South Tripura</option>
-          <option value="North Tripura">North Tripura</option>
-          <option value="Dhalai">Dhalai</option>
-          <option value="Gomati">Gomati</option>
+          {availableDistricts.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
         <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
       </div>

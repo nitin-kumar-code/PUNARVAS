@@ -1,9 +1,11 @@
 import { useDashboardSummary } from '../../hooks/useDashboardSummary';
 import { Users, ChevronRight, Loader2, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { ImmediateRelocationCandidate } from '../../types/api';
 
 export const PriorityHabitations = () => {
   const { data, loading, error } = useDashboardSummary();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -44,7 +46,12 @@ export const PriorityHabitations = () => {
           <Users className="w-5 h-5 text-slate-500" />
           <h3 className="font-bold text-punarvas-text text-lg">Priority Habitations</h3>
         </div>
-        <button className="text-sm font-semibold text-punarvas-primary-blue hover:underline">View Full Registry</button>
+        <button 
+          onClick={() => navigate('/risk')}
+          className="text-sm font-semibold text-punarvas-primary-blue hover:underline"
+        >
+          View Full Registry
+        </button>
       </div>
       
       <div className="overflow-x-auto flex-1">

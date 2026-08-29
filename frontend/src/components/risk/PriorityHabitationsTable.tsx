@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Download, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import type { TriageRecord } from '../../data/triageData';
+import type { TriageRecord } from '../../hooks/useHabitations';
 
 interface PriorityHabitationsTableProps {
   data: TriageRecord[];
@@ -25,14 +25,14 @@ export const PriorityHabitationsTable = ({ data, selectedId, onSelect }: Priorit
 
   const sortedData = useMemo(() => {
     return [...data].sort((a, b) => {
-      let valA = a[sortField];
-      let valB = b[sortField];
+      let valA: any = a[sortField];
+      let valB: any = b[sortField];
 
       // Handle confidence string ordering
       if (sortField === 'confidence') {
-        const confVal = { High: 3, Medium: 2, Low: 1 };
-        valA = confVal[a.confidence];
-        valB = confVal[b.confidence];
+        const confVal: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
+        valA = confVal[a.confidence] || 0;
+        valB = confVal[b.confidence] || 0;
       }
 
       if (valA < valB) return sortDesc ? 1 : -1;

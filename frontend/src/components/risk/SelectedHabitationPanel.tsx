@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, AlertTriangle, Lightbulb, MapPin, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import type { TriageRecord } from '../../data/triageData';
+import type { TriageRecord } from '../../hooks/useHabitations';
 
 interface SelectedHabitationPanelProps {
   habitation: TriageRecord | null;

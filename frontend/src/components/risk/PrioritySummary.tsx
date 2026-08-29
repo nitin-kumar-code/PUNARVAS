@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
-import type { TriageRecord } from '../../data/triageData';
+import type { TriageRecord } from '../../hooks/useHabitations';
 
 export const PrioritySummary = ({ data }: { data?: TriageRecord[] }) => {
   const countP1 = data?.filter(r => r.priority.includes('P1')).length || 8;
