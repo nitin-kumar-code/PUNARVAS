@@ -57,3 +57,11 @@ def test_map_endpoints(client):
     response = client.get(f"{settings.API_V1_PREFIX}/map/sites")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
+
+def test_dashboard_summary_capacity_null(client):
+    response = client.get(f"{settings.API_V1_PREFIX}/dashboard/summary")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["safe_relocation_capacity"] is None
+    assert data["available_relocation_capacity"] is None
+    assert data["relocation_coverage"] is None
