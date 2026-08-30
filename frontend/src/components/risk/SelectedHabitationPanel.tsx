@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, AlertTriangle, Lightbulb, MapPin, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TriageRecord } from '../../hooks/useHabitations';
+import { HazardBadgeList } from '../../utils/hazardUtils';
 
 interface SelectedHabitationPanelProps {
   habitation: TriageRecord | null;
@@ -38,8 +39,10 @@ export const SelectedHabitationPanel = ({ habitation, onOpenRelocation }: Select
 
       <div className="flex gap-8 mb-8 pb-6 border-b border-slate-100">
         <div>
-          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hazard</h3>
-          <p className="text-sm font-semibold text-slate-700">{habitation.hazard}</p>
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Hazard Profile</h3>
+          <div className="mt-1">
+            <HazardBadgeList hazards={habitation.hazards} primaryHazard={habitation.hazard} />
+          </div>
         </div>
         <div className="border-l border-slate-200 pl-8">
           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Risk Score</h3>

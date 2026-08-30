@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
@@ -30,6 +30,7 @@ class HabitationBase(BaseModel):
     vulnerability_component: Optional[float] = None
     
     primary_hazard: Optional[str] = None
+    hazards: Optional[Dict[str, float]] = None
     risk_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     triage_level: Optional[str] = None
     confidence_score: Optional[float] = None

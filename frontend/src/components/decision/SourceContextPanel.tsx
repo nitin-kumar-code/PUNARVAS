@@ -1,5 +1,7 @@
 import React from 'react';
+import { AlertTriangle, Users } from 'lucide-react';
 import type { DecisionRecord } from '../../data/decisionData';
+import { HazardBadgeList } from '../../utils/hazardUtils';
 
 export const SourceContextPanel = ({ decision }: { decision: DecisionRecord }) => {
   return (
@@ -16,8 +18,8 @@ export const SourceContextPanel = ({ decision }: { decision: DecisionRecord }) =
             <p className="text-xl font-bold text-punarvas-text">{decision.source.population.toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hazard</p>
-            <p className="text-xl font-bold text-punarvas-text">{decision.source.hazard}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Hazard Profile</p>
+            <HazardBadgeList hazards={decision.source.hazards} primaryHazard={decision.source.hazard} />
           </div>
         </div>
         

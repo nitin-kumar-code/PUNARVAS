@@ -39,7 +39,8 @@ def _map_json_to_dict(hab: Dict[str, Any]) -> dict:
         "confidence_score": hab.get("confidence_score"),
         "explanation": hab.get("explanation"),
         "risk_level": risk_level,
-        "primary_hazard": "UNKNOWN (GAP: ML JSON missing flood/landslide score mapping)", 
+        "primary_hazard": "Unknown", 
+        "hazards": hab.get("hazards"),
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Download, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import type { TriageRecord } from '../../hooks/useHabitations';
+import { HazardBadgeList } from '../../utils/hazardUtils';
 
 interface PriorityHabitationsTableProps {
   data: TriageRecord[];
@@ -104,7 +105,9 @@ export const PriorityHabitationsTable = ({ data, selectedId, onSelect }: Priorit
                   }`} />
                   <span className="font-semibold text-sm text-punarvas-text whitespace-nowrap">{row.habitation}</span>
                 </td>
-                <td className="p-3 text-sm text-slate-600">{row.hazard}</td>
+                <td className="p-3 text-sm text-slate-600">
+                  <HazardBadgeList hazards={row.hazards} primaryHazard={row.hazard} />
+                </td>
                 <td className="p-3">
                   <div className="flex items-center gap-3">
                     <span className={`font-bold text-sm w-6 ${
