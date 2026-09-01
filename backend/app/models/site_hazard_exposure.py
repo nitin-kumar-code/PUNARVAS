@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Float, Text, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import UUID
 from app.db.base import Base
 
 class SiteHazardExposure(Base):

@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str = "postgresql+psycopg://postgres:password@localhost:5432/punarvas"
+    DATABASE_URL: str = "sqlite:///./punarvas.db"
     API_V1_PREFIX: str = "/api"
     FRONTEND_URL: str = "http://localhost:5173"
 

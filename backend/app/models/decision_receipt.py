@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Float, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import UUID, JSON
 from datetime import datetime, timezone
 from app.db.base import Base
 
@@ -15,7 +15,7 @@ class DecisionReceipt(Base):
     risk_score = Column(Float, nullable=False)
     primary_reason = Column(Text, nullable=False)
     
-    evidence = Column(JSONB, nullable=False, default={})
+    evidence = Column(JSON, nullable=False, default={})
     confidence_score = Column(Float, nullable=False)
     
     generated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

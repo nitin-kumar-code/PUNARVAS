@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Float, Enum, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import UUID
 from datetime import datetime, timezone
 from app.db.base import Base
 from app.models.enums import Recommendation
