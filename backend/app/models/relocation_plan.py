@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, Float, Enum, ForeignKey, JSON
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import UUID
 from app.db.base import Base
 from app.models.enums import RelocationStatus
 

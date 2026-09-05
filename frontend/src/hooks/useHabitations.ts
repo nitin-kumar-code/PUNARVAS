@@ -7,6 +7,7 @@ interface BackendHabitation {
   name: string;
   district: string;
   primary_hazard: string;
+  hazards?: Record<string, number>;
   risk_score: number;
   risk_level: string;
   hazard_component: number;
@@ -25,6 +26,7 @@ export interface TriageRecord {
   habitation: string;
   district: string;
   hazard: string;
+  hazards?: Record<string, number>;
   riskScore: number;
   riskLevel: string;
   hazardSeverity: number;
@@ -56,7 +58,7 @@ export function useHabitations() {
         });
         
         // Map to TriageRecord expected by the frontend
-        const mappedData: TriageRecord[] = results.map(r => {
+        const mappedData: TriageRecord[] = results.map((r, i) => {
           let conf = 'Medium';
           if (r.confidence_score > 80) conf = 'High';
           else if (r.confidence_score < 50) conf = 'Low';
@@ -66,6 +68,7 @@ export function useHabitations() {
             habitation: r.name,
             district: r.district,
             hazard: r.primary_hazard,
+            hazards: r.hazards,
             riskScore: r.risk_score,
             riskLevel: r.risk_level === 'CRITICAL' ? 'Critical' : r.risk_level === 'HIGH' ? 'High' : r.risk_level === 'MEDIUM' ? 'Medium' : 'Low',
             hazardSeverity: r.hazard_component,
@@ -76,17 +79,20 @@ export function useHabitations() {
             confidence: conf,
             priority: r.risk_level === 'CRITICAL' ? 'P1' : r.risk_level === 'HIGH' ? 'P2' : 'P3',
             assessmentTime: r.updated_at,
-            evidence: ['Automated ML Assessment'],
+            evidence: [],
             explanation: [r.explanation]
           };
         });
 
         setData(mappedData);
         setError(null);
+        setLoading(false);
       } catch (err: any) {
-        if (err.name === 'AbortError') return;
+        if (err.name === 'AbortError') {
+          // Do not update state if aborted, to prevent flashing empty UI in strict mode
+          return;
+        }
         setError(err);
-      } finally {
         setLoading(false);
       }
     };

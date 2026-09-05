@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
-import type { TriageRecord } from '../../data/triageData';
+import type { TriageRecord } from '../../hooks/useHabitations';
 import type { RelocationSite } from '../../data/relocationData';
 
 interface ProposedAllocationProps {

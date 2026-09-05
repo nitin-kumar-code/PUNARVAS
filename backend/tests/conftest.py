@@ -7,9 +7,9 @@ from app.main import app
 from app.db.base import Base
 from app.core.database import get_db
 
-SQLALCHEMY_DATABASE_URL = "postgresql+psycopg://localhost:5433/punarvas_test"
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def override_get_db():

@@ -16,7 +16,7 @@ export const MapInterface = () => {
   
   const [filters, setFilters] = useState({
     baseLayer: {
-      populationDensity: true,
+      populationDensity: false,
     },
     hazards: {
       flood: true,

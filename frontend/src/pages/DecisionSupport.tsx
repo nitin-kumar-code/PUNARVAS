@@ -15,13 +15,12 @@ export const DecisionSupport = () => {
   const [decision, setDecision] = useState<DecisionRecord>(() => {
     if (!state?.source) return mockDecision;
 
-    // Dynamically calculate the factors so they sum exactly to the risk score
-    // In a real app this comes from the backend AI model
-    const risk = state.source.riskScore;
-    const factor1 = Math.round(risk * 0.38); // ~38%
-    const factor2 = Math.round(risk * 0.30); // ~30%
-    const factor3 = Math.round(risk * 0.20); // ~20%
-    const factor4 = risk - (factor1 + factor2 + factor3); // remainder ensures exact match
+    // Use the exact components sent by the backend AI
+    const { hazardSeverity, exposureLevel, vulnerability, riskScore } = state.source;
+    
+    // In the real system, these three add up to the riskScore, 
+    // but just in case of rounding differences, we map exactly what we have.
+    const remainder = riskScore - (hazardSeverity + exposureLevel + vulnerability);
 
     return {
       decisionId: `PLAN-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
@@ -36,10 +35,10 @@ export const DecisionSupport = () => {
         priority: state.source.priority
       },
       factors: [
-        { name: "HAZARD EXPOSURE", contribution: factor1, severity: "critical" },
-        { name: "VULNERABILITY", contribution: factor2, severity: "high" },
-        { name: "POOR ROAD ACCESS", contribution: factor3, severity: "medium" },
-        { name: "ACTIVE HAZARD SIGNAL", contribution: factor4, severity: "critical" }
+        { name: "HAZARD COMPONENT", contribution: hazardSeverity, severity: "critical" },
+        { name: "EXPOSURE COMPONENT", contribution: exposureLevel, severity: "high" },
+        { name: "VULNERABILITY COMPONENT", contribution: vulnerability, severity: "medium" },
+        ...(remainder > 0 ? [{ name: "OTHER FACTORS", contribution: remainder, severity: "low" as any }] : [])
       ],
       confidence: 94,
       confidenceLabel: "HIGH",
@@ -152,11 +151,20 @@ export const DecisionSupport = () => {
       <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex gap-3">
           <button 
-            onClick={() => setShowConfirmModal(true)}
+            onClick={() => navigate('/resource', { 
+              state: { 
+                population: decision.source.population,
+                destinations: decision.destinations.map(d => ({
+                  id: d.site,
+                  name: d.site,
+                  population: d.allocation
+                }))
+              } 
+            })}
             disabled={decision.status !== 'APPROVED / READY FOR EXECUTION'}
             className="disabled:opacity-50 disabled:cursor-not-allowed bg-punarvas-safe-green hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-colors text-lg"
           >
-            Execute Relocation Plan
+            Allocate Resources
           </button>
           <button className="bg-punarvas-dark-navy hover:bg-slate-800 text-white px-6 py-3 rounded-lg font-bold shadow-sm transition-colors">
             Export Receipt

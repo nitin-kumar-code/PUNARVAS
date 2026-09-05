@@ -29,6 +29,24 @@ class JSONDataService:
     def get_all_habitations(self) -> List[Dict[str, Any]]:
         if self._habitations is None:
             raw_habs = self._load_json(HABITATION_SCORES_PATH)
+            
+            # Load hazard_data.csv to get explicit hazard identity
+            hazard_csv_path = PROJECT_ROOT / "ai-ml" / "data" / "hazard_data.csv"
+            hazard_map = {}
+            if hazard_csv_path.exists():
+                import csv
+                with open(hazard_csv_path, "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        h_id = row.get("habitation_id")
+                        if h_id:
+                            flood = float(row.get("flood_score", 0))
+                            landslide = float(row.get("landslide_score", 0))
+                            hazard_map[str(h_id)] = {
+                                "Flood": flood,
+                                "Landslide": landslide
+                            }
+            
             self._habitations = []
             self._habitations_by_uuid = {}
             for hab in raw_habs:
@@ -36,6 +54,13 @@ class JSONDataService:
                     raise ValueError("CRITICAL DATA GAP: Missing 'habitation_id' in habitation_scores.json.")
                     
                 hab_id = str(hab["habitation_id"])
+                
+                # Attach hazards
+                hazards = hazard_map.get(hab_id, {})
+                # Filter out hazards with 0 score to keep the payload clean
+                active_hazards = {k: v for k, v in hazards.items() if v > 0}
+                hab["hazards"] = active_hazards if active_hazards else None
+
                 deterministic_id = uuid.uuid5(HABITATION_NAMESPACE, hab_id)
                 hab["id"] = deterministic_id
                 self._habitations.append(hab)

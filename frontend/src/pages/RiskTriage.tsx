@@ -116,7 +116,7 @@ export const RiskTriage = () => {
         <div className="w-full lg:flex-1 h-full overflow-y-auto">
           <SelectedHabitationPanel 
             habitation={selectedHabitation} 
-            onOpenRelocation={() => navigate('/relocation', { state: { selectedHabitationId: selectedId } })} 
+            onOpenRelocation={() => navigate('/relocation', { state: { selectedHabitation: selectedHabitation } })} 
           />
         </div>
       </div>

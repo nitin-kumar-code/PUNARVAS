@@ -113,7 +113,11 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
   }, [filters.severity, habitations]);
 
   const filteredSites = React.useMemo(() => {
-    return filters.severity['Safe'] !== false ? sites : [];
+    return sites.filter(site => {
+      // Sites should respect the Risk Severity checkboxes based on their risk score
+      const level = getRiskLevelFromScore(site.site_risk_score || 0);
+      return filters.severity[mapSeverity(level)] !== false;
+    });
   }, [filters.severity, sites]);
 
   const bounds = React.useMemo(() => {
@@ -167,6 +171,8 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
           </div>
         </div>
       )}
+
+
 
       {hasData && (
         <MapContainer 
@@ -271,6 +277,32 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
                 );
               })}
             </MarkerClusterGroup>
+          )}
+
+          {/* Population Density Layer */}
+          {filters?.baseLayer?.populationDensity && (
+            <Fragment>
+              {habitations.map(loc => {
+                if (!loc.latitude || !loc.longitude || isNaN(loc.latitude) || isNaN(loc.longitude)) return null;
+                // Calculate radius based on population (e.g. 15 meters per person, min 200m, max 5km)
+                const radius = Math.min(Math.max((loc.population || 0) * 15, 200), 5000);
+                // Heatmap style: higher population = denser color
+                const opacity = Math.min((loc.population || 0) / 1000 + 0.2, 0.7);
+                return (
+                  <Circle 
+                    key={`pop-${loc.id}`}
+                    center={[loc.latitude, loc.longitude]}
+                    radius={radius}
+                    pathOptions={{
+                      fillColor: '#8b5cf6', // purple
+                      fillOpacity: opacity,
+                      color: '#7c3aed',
+                      weight: 1,
+                    }}
+                  />
+                );
+              })}
+            </Fragment>
           )}
 
           {/* Render Sites independent of clusters so they are always visible */}

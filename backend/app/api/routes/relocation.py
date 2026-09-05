@@ -56,3 +56,15 @@ def create_allocation(id: UUID, allocation: AllocationCreate, db: Session = Depe
     db.commit()
     db.refresh(db_alloc)
     return db_alloc
+
+from pydantic import BaseModel
+from app.services.relocation_service import RelocationService
+from app.optimization.schemas import OptimizerOutput
+
+class OptimizeRequest(BaseModel):
+    habitation_id: UUID
+
+@router.post("/optimize", response_model=OptimizerOutput)
+def optimize_relocation(req: OptimizeRequest, db: Session = Depends(get_db)):
+    service = RelocationService(db)
+    return service.recommend_relocation(req.habitation_id)

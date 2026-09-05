@@ -1,5 +1,7 @@
 import React from 'react';
-import type { TriageRecord } from '../../data/triageData';
+import { AlertTriangle, Users, MapPin } from 'lucide-react';
+import type { TriageRecord } from '../../hooks/useHabitations';
+import { HazardBadgeList } from '../../utils/hazardUtils';
 
 export const SourceHabitationCard = ({ habitation }: { habitation: TriageRecord }) => {
   return (
@@ -31,8 +33,8 @@ export const SourceHabitationCard = ({ habitation }: { habitation: TriageRecord 
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold text-slate-500">Primary Hazard</span>
-            <span className="text-sm font-bold text-slate-700">{habitation.hazard}</span>
+            <span className="text-sm font-semibold text-slate-500">Hazard Profile</span>
+            <HazardBadgeList hazards={habitation.hazards} primaryHazard={habitation.hazard} />
           </div>
         </div>
       </div>

@@ -7,18 +7,15 @@ SIH26191 — Intelligent Identification of Hazard-Based Red Zones, Carrying Capa
 
 ## Architecture
 PUNARVAS is designed as a modular system:
-- **Frontend**: React + Vite
+- **Frontend**: React + Vite (TypeScript, Tailwind CSS, Leaflet)
 - **Backend**: FastAPI (Python), SQLAlchemy 2.0, Pydantic v2
-- **Database**: PostgreSQL (psycopg, Alembic)
+- **Database**: SQLite (Zero-config, highly portable for demos)
+- **AI/ML**: Python (Pandas) rules-based scoring pipeline
+- **Optimization Engine**: Google OR-Tools (Linear Programming)
 
 ## How to Start the Backend
 
-### 1. Database Setup
-You need a running PostgreSQL instance.
-1. Create a database named `punarvas`.
-2. Create a database named `punarvas_test` (for testing).
-
-### 2. Environment Configuration
+### 1. Environment Configuration
 Navigate to the `backend` directory and set up your virtual environment:
 ```bash
 cd backend
@@ -30,31 +27,24 @@ python -m venv venv
 # For Mac/Linux:
 # source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
+echo "DATABASE_URL=sqlite:///./punarvas.db\nAPI_V1_PREFIX=/api/v1" > .env
 ```
-Ensure `DATABASE_URL` in `.env` points to your active PostgreSQL instance (e.g., `postgresql+psycopg://postgres:password@localhost:5432/punarvas`).
 
-### 3. Run Database Migrations (Alembic)
-Initialize the database schema:
+### 2. Seed the Database
+We use an auto-generating seeder to create the SQLite database `punarvas.db` and populate it with realistic demo data (Habitations, Sites, Risk Assessments).
 ```bash
-alembic upgrade head
+PYTHONPATH=. python app/db/seed.py
 ```
 
-### 4. Seed the Database
-Populate the database with realistic demo data (Habitations, Sites, Risk Assessments, etc.):
-```bash
-PYTHONPATH=. python -m app.db.seed
-```
-
-### 5. Start the API
+### 3. Start the API
 ```bash
 uvicorn app.main:app --reload
 ```
 - API URL: `http://localhost:8000`
 - Swagger UI (Documentation & Testing): `http://localhost:8000/docs`
 
-### 6. Run Tests
-Tests are executed using `pytest` against the test database:
+### 4. Run Tests
+Tests are executed using `pytest` against an in-memory SQLite database:
 ```bash
 PYTHONPATH=. pytest
 ```

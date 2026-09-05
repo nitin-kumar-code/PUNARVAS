@@ -93,17 +93,46 @@ export const SelectedLocationPanel = ({ location, onClose }: SelectedLocationPan
         <div className="md:col-span-1 px-2 border-r border-slate-100">
           <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Hazard Profile</h3>
           <div className="flex flex-wrap gap-2">
-            {isHabitation && (location as MapHabitation).risk_level === 'CRITICAL' && (
-              <div className="px-2 py-1 border rounded text-[10px] font-bold uppercase bg-red-50 border-red-200 text-punarvas-critical-red">
-                Critical Zone
-              </div>
+            {isHabitation && (
+              <>
+                <div className={`px-2 py-1 border rounded text-[10px] font-bold uppercase ${
+                  (location as MapHabitation).risk_level === 'CRITICAL' ? 'bg-red-50 border-red-200 text-punarvas-critical-red' :
+                  (location as MapHabitation).risk_level === 'HIGH' ? 'bg-orange-50 border-orange-200 text-punarvas-high-orange' :
+                  'bg-yellow-50 border-yellow-200 text-punarvas-medium-yellow'
+                }`}>
+                  {(location as MapHabitation).triage_level || 'Unknown Triage'}
+                </div>
+                {(location as MapHabitation).hazard_component !== undefined && (
+                  <div className="px-2 py-1 border rounded text-[10px] font-bold uppercase bg-slate-50 border-slate-200 text-slate-600">
+                    Hazard Score: {(location as MapHabitation).hazard_component}
+                  </div>
+                )}
+                {(location as MapHabitation).confidence_score !== undefined && (
+                  <div className="px-2 py-1 border rounded text-[10px] font-bold uppercase bg-slate-50 border-slate-200 text-slate-600">
+                    Confidence: {(location as MapHabitation).confidence_score}%
+                  </div>
+                )}
+              </>
             )}
+            
             {isSite && (
-              <div className="px-2 py-1 border rounded text-[10px] font-bold uppercase bg-green-50 border-green-200 text-punarvas-safe-green flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> Safe Site
-              </div>
+              <>
+                <div className={`px-2 py-1 border rounded text-[10px] font-bold uppercase flex items-center gap-1 ${
+                  (location as MapSite).status.toLowerCase() === 'approved' || (location as MapSite).status.toLowerCase() === 'active' 
+                    ? 'bg-green-50 border-green-200 text-punarvas-safe-green' 
+                    : 'bg-red-50 border-red-200 text-punarvas-critical-red'
+                }`}>
+                  <ShieldCheck className="w-3 h-3" /> {(location as MapSite).site_tier || 'Site'}
+                </div>
+                {(location as MapSite).hazard_score !== undefined && (
+                  <div className="px-2 py-1 border rounded text-[10px] font-bold uppercase bg-slate-50 border-slate-200 text-slate-600">
+                    Hazard Score: {(location as MapSite).hazard_score}
+                  </div>
+                )}
+              </>
             )}
-            {(!isHabitation || (location as MapHabitation).risk_level !== 'CRITICAL') && !isSite && (
+            
+            {(!isHabitation && !isSite) && (
               <span className="text-sm text-slate-400">Data pending</span>
             )}
           </div>

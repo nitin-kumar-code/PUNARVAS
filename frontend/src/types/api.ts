@@ -18,6 +18,7 @@ export interface ImmediateRelocationCandidate {
   risk_score: number;
   vulnerable_population: number;
   primary_hazard: string;
+  hazards?: Record<string, number>;
   reason_for_priority: string;
 }
 
@@ -61,6 +62,7 @@ export interface MapHabitation {
   exposure_component?: number;
   vulnerability_component?: number;
   explanation?: string;
+  hazards?: Record<string, number>;
 }
 
 export interface MapSite {

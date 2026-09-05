@@ -13,6 +13,7 @@ export interface DecisionRecord {
     population: number;
     vulnerablePopulation: number;
     hazard: string;
+    hazards?: Record<string, number>;
     riskScore: number;
     priority: string;
   };
