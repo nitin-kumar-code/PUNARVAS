@@ -40,7 +40,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: strong road access, good livelihood access, healthcare capacity.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 52.14).",
     "capacity_people": 550,
     "available_capacity": 550
   },
@@ -100,7 +100,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: strong road access, good livelihood access, healthcare capacity.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 51.74).",
     "capacity_people": 225,
     "available_capacity": 225
   },
@@ -130,7 +130,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: strong road access, good livelihood access, healthcare capacity.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 51.74).",
     "capacity_people": 600,
     "available_capacity": 600
   },
@@ -160,7 +160,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: good livelihood access, healthcare capacity.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 52.54).",
     "capacity_people": 575,
     "available_capacity": 575
   },
@@ -175,7 +175,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: strong road access.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 53.34).",
     "capacity_people": 225,
     "available_capacity": 225
   },
@@ -205,7 +205,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: good livelihood access, healthcare capacity.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 52.54).",
     "capacity_people": 200,
     "available_capacity": 200
   },
@@ -235,7 +235,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: good livelihood access, healthcare capacity.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 51.34).",
     "capacity_people": 225,
     "available_capacity": 225
   },
@@ -250,7 +250,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: good livelihood access, healthcare capacity.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 54.54).",
     "capacity_people": 225,
     "available_capacity": 225
   },
@@ -265,7 +265,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: strong road access, good livelihood access, healthcare capacity.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 52.54).",
     "capacity_people": 600,
     "available_capacity": 600
   },
@@ -280,7 +280,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: strong road access.",
+    "explanation": "Blocked due to severe natural hazard exposure (Hazard Score: 51.34).",
     "capacity_people": 575,
     "available_capacity": 575
   },
@@ -295,7 +295,7 @@
     "site_tier": "Avoid",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Avoid site: lower relative hazard.",
+    "explanation": "Blocked due to failed safety inspections.",
     "capacity_people": 75,
     "available_capacity": 75
   }

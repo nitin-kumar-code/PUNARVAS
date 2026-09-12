@@ -141,6 +141,11 @@ export const RelocationPlanner = () => {
   };
 
   const handleSelectSite = (id: string) => {
+    // Lock manual selection once the backend engine generates the mathematically optimal plan
+    if (allocationResult) {
+      return; 
+    }
+
     const site = relocationSites.find(s => s.id === id);
     if (!site || !site.eligible) return;
     
@@ -215,6 +220,7 @@ export const RelocationPlanner = () => {
             onSelectSite={handleSelectSite}
             recommendedSiteId={recommendedSiteId}
             onViewDetails={setViewSite}
+            isPlanGenerated={!!allocationResult}
           />
           
           {allocationResult && (
