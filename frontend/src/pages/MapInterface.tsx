@@ -14,6 +14,12 @@ export const MapInterface = () => {
   const locationState = useLocation().state as { selectedLocationId?: string } | null;
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(locationState?.selectedLocationId || null);
   
+  React.useEffect(() => {
+    if (locationState?.selectedLocationId) {
+      setSelectedLocationId(locationState.selectedLocationId);
+    }
+  }, [locationState?.selectedLocationId]);
+  
   const [filters, setFilters] = useState({
     baseLayer: {
       populationDensity: false,
