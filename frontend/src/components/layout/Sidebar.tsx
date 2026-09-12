@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Shield, LayoutDashboard, Map as MapIcon, AlertTriangle, Users, BrainCircuit, Compass, Package, FileText, Plus, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, AlertTriangle, Users, BrainCircuit, Compass, Package, FileText, Plus, Settings, LogOut } from 'lucide-react';
 
 export const Sidebar = () => {
   const mainNav = [
@@ -20,13 +20,10 @@ export const Sidebar = () => {
     <aside className="w-64 bg-punarvas-dark-navy h-screen fixed top-0 left-0 flex flex-col shadow-xl z-20">
       {/* Branding */}
       <div className="p-6 pb-8">
-        <div className="flex items-center gap-3">
-          <Shield className="w-8 h-8 text-white" />
-          <div>
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="Punarvas Logo" className="w-16 h-16 object-contain shrink-0 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+          <div className="flex-1">
             <h1 className="text-white font-bold text-xl tracking-wide">PUNARVAS</h1>
-            <p className="text-blue-200 text-[10px] leading-tight uppercase tracking-wider mt-1 opacity-80">
-              Vulnerability &<br />Resettlement<br />Intelligence
-            </p>
           </div>
         </div>
       </div>
