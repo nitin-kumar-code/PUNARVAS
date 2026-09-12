@@ -9,3 +9,4 @@ pytest
 httpx
 alembic
 ortools==9.15.6755
+requests

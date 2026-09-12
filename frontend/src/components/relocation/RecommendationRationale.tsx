@@ -78,7 +78,7 @@ export const RecommendationRationale = ({ site }: RecommendationRationaleProps) 
             <span>{infScore} × 15% = {infWeight}</span>
           </div>
           <div className="flex justify-between">
-            <span>Distance</span>
+            <span>Road Distance</span>
             <span>{distScore} × 10% = {distWeight}</span>
           </div>
           <div className="border-t border-dashed border-slate-300 pt-1 mt-1 flex justify-between font-bold text-punarvas-text">

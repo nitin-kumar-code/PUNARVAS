@@ -71,6 +71,8 @@ class OptimizerAllocation(BaseModel):
     population: int = Field(..., ge=0)
     percentage: float = Field(..., ge=0.0, le=100.0)
     distance_km: float = Field(..., ge=0.0)
+    travel_time_minutes: Optional[float] = None
+    routing_status: str = "fallback_haversine"
     site_score: float = Field(..., ge=0.0, le=100.0)
 
 class HazardExposureInfo(BaseModel):

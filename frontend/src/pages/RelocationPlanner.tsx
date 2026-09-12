@@ -119,6 +119,20 @@ export const RelocationPlanner = () => {
       }
       
       setAllocationResult(result);
+
+      // Update relocationSites with the distance and travel time calculated by the backend
+      setRelocationSites(prev => prev.map(site => {
+        const allocationMatch = result.allocations.find((a: any) => a.site_id === site.id);
+        if (allocationMatch) {
+          return {
+            ...site,
+            distance: allocationMatch.distance_km,
+            travelTime: allocationMatch.travel_time_minutes || 0
+          };
+        }
+        return site;
+      }));
+      
     } catch (err) {
       console.error("Failed to generate plan", err);
     } finally {
