@@ -60,6 +60,24 @@ from app.schemas.intelligence import DecisionGenerateRequest
 from app.services.decision_service import DecisionService
 from app.schemas.decision import DecisionReceipt as DecisionReceiptSchema
 
+from app.services.ml_prediction_service import ml_prediction_service
+
+@router.get("/ml-risk/{habitation_id}")
+def get_ml_risk_prediction(habitation_id: str, simulate: bool = False, sim_rainfall: float = None, sim_river: float = None):
+    sim_data = {}
+    if sim_rainfall is not None:
+        sim_data["rainfall_24h"] = sim_rainfall
+        sim_data["rainfall_3day"] = sim_rainfall * 2  # Proportional simulation
+        sim_data["rainfall_7day"] = sim_rainfall * 4
+    if sim_river is not None:
+        sim_data["river_level"] = sim_river
+    
+    try:
+        prediction = ml_prediction_service.get_habitation_prediction(habitation_id, simulate=simulate, sim_data=sim_data)
+        return prediction
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/decisions/generate", response_model=DecisionReceiptSchema)
 def generate_decision(request: DecisionGenerateRequest, db: Session = Depends(get_db)):
     service = DecisionService(db)
