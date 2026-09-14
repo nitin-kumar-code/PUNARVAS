@@ -117,8 +117,12 @@ def validate_input_features(
     df = input_df.copy()
     missing = [c for c in expected_features if c not in df.columns]
     if missing:
+        pct = len(missing) / len(expected_features) * 100
         logger.warning(
-            "Input is missing expected features: %s. Imputing with 0.", missing
+            "FEATURE MISMATCH: Input is missing %d/%d (%.0f%%) expected features: %s. "
+            "Imputing with 0. This WILL produce incorrect predictions if "
+            "the missing features are important to the model.",
+            len(missing), len(expected_features), pct, missing,
         )
         for c in missing:
             df[c] = 0.0

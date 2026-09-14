@@ -1,9 +1,13 @@
 import sys
 from pathlib import Path
 import logging
+import uuid
 import pandas as pd
+from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
+
+# Setup path so we can import from ai-ml safely
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 AI_ML_DIR = PROJECT_ROOT / "ai-ml"
 
@@ -70,23 +74,39 @@ class MLPredictionService:
         if self._batch_cache is not None:
             return self._batch_cache
             
-        from src.predict import predict_hazards_batch
+        from src.predict import _enrich_habitations_with_features
+        from src.risk_engine import score_habitations
         import uuid
         
         HABITATION_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
         
-        # Run batch prediction
-        results_df = predict_hazards_batch(self.habitations_df)
+        data_dir = str(AI_ML_DIR / "data")
+        
+        # Step 1: Enrich habitations with terrain, soil, satellite, weather, river data
+        # This fixes the training/inference feature mismatch that caused all-CRITICAL
+        enriched_df = _enrich_habitations_with_features(self.habitations_df, data_dir)
+        
+        # Step 2: Use the full risk engine which combines:
+        #   - ML hazard predictions (45% weight)
+        #   - Exposure scoring: population, density, children (30% weight)
+        #   - Vulnerability scoring: housing, healthcare (25% weight)
+        # This produces a composite 0-100 risk score with proper triage levels
+        scored_df = score_habitations(enriched_df, mode="HYBRID")
         
         records = []
-        for idx, row in results_df.iterrows():
+        for idx, row in scored_df.iterrows():
             hab_id = str(idx)
             deterministic_id = uuid.uuid5(HABITATION_NAMESPACE, hab_id)
             
-            # Map features to the frontend-expected schema
             flood_prob = float(row.get("flood_probability", 0))
             landslide_prob = float(row.get("landslide_probability", 0))
-            overall_risk = row.get("overall_risk", "LOW")
+            risk_score = float(row.get("risk_score", 0))
+            triage_level = str(row.get("triage_level", "Low"))
+            hazard_comp = float(row.get("hazard_component", 0))
+            exposure_comp = float(row.get("exposure_component", 0))
+            vuln_comp = float(row.get("vulnerability_component", 0))
+            confidence = float(row.get("confidence_score", 0))
+            explanation = str(row.get("explanation", ""))
             
             rec = {
                 "id": deterministic_id,
@@ -96,14 +116,14 @@ class MLPredictionService:
                 "longitude": float(row.get("longitude", 0)),
                 "population": int(row.get("population", 0)),
                 "sub_district": str(row.get("sub_district", "Unknown")),
-                "triage_level": overall_risk,
-                "risk_score": float(round(max(flood_prob, landslide_prob) * 100, 2)),
-                "confidence_score": 90.0, 
-                "explanation": f"ML Derived. Flood Risk: {row.get('flood_risk')}, Landslide Risk: {row.get('landslide_risk')}",
+                "triage_level": triage_level,
+                "risk_score": round(risk_score, 2),
+                "confidence_score": round(confidence, 1),
+                "explanation": explanation,
                 "updated_at": "2024-10-24T12:00:00Z",
-                "hazard_component": float(round(max(flood_prob, landslide_prob) * 100, 2)),
-                "exposure_component": 50,
-                "vulnerability_component": 50,
+                "hazard_component": round(hazard_comp, 2),
+                "exposure_component": round(exposure_comp, 2),
+                "vulnerability_component": round(vuln_comp, 2),
                 "vulnerable_population": int(row.get("population", 0) * 0.3),
                 "hazards": {
                     "Flood": float(round(flood_prob * 100, 2)),
