@@ -20,8 +20,8 @@ L.Icon.Default.mergeOptions({
 const getRiskColor = (level: string) => {
   switch (level) {
     case 'CRITICAL': return '#E53935'; // punarvas-critical-red
-    case 'HIGH': return '#FF8A00'; // punarvas-high-orange
-    case 'MEDIUM': return '#F5B700'; // punarvas-medium-yellow
+    case 'HIGH': return '#E53935'; // changed to red
+    case 'MEDIUM': return '#18A957'; // changed to green
     case 'LOW': return '#18A957'; // punarvas-safe-green
     case 'Safe': return '#18A957';
     default: return '#1464E8';
@@ -60,8 +60,8 @@ const createCustomIcon = (color: string, isSelected: boolean = false) => {
 
 const icons: Record<string, L.DivIcon> = {
   CRITICAL: createCustomIcon('#E53935'),
-  HIGH: createCustomIcon('#FF8A00'),
-  MEDIUM: createCustomIcon('#F5B700'),
+  HIGH: createCustomIcon('#E53935'),
+  MEDIUM: createCustomIcon('#18A957'),
   LOW: createCustomIcon('#18A957'),
   Safe: createCustomIcon('#18A957'),
 };

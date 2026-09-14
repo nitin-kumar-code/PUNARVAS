@@ -5,8 +5,8 @@
   --color-punarvas-deep-navy: #08244A;
   --color-punarvas-primary-blue: #1464E8;
   --color-punarvas-critical-red: #E53935;
-  --color-punarvas-high-orange: #FF8A00;
-  --color-punarvas-medium-yellow: #F5B700;
+  --color-punarvas-high-orange: #E53935; /* Changed to red as per triage request */
+  --color-punarvas-medium-yellow: #18A957; /* Changed to green as per triage request */
   --color-punarvas-safe-green: #18A957;
   --color-punarvas-bg: #F5F8FC;
   --color-punarvas-card: #FFFFFF;

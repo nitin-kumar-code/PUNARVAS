@@ -128,7 +128,12 @@ def calculate_dynamic_risk_single(
     situational_hazard = max_hazard_prob * 100.0
 
     if has_telemetry:
-        dyn_risk = round(0.50 * situational_hazard + 0.50 * base_risk, 2)
+        rule_hazard = _safe_float(row.get("hazard_component"), 50.0)
+        exposure = _safe_float(row.get("exposure_component"), 50.0)
+        vuln = _safe_float(row.get("vulnerability_component"), 50.0)
+        
+        dyn_hazard = 0.55 * situational_hazard + 0.45 * rule_hazard
+        dyn_risk = round(0.45 * dyn_hazard + 0.30 * exposure + 0.25 * vuln, 2)
     else:
         dyn_risk = base_risk
 
