@@ -36,14 +36,22 @@ const getRiskLevelFromScore = (score: number) => {
 };
 
 // Create custom icons based on risk level
-const createCustomIcon = (color: string) => {
+const createCustomIcon = (color: string, isSelected: boolean = false) => {
+  const scale = isSelected ? 1.4 : 1;
+  const strokeWidth = isSelected ? 3 : 2;
+  const ring = isSelected ? `<circle cx="12" cy="9.5" r="10" fill="none" stroke="${color}" stroke-width="2.5" stroke-dasharray="4 2" class="animate-pulse" />` : '';
+  const zIndex = isSelected ? 1000 : 0;
+  
   return new L.DivIcon({
-    className: 'custom-icon',
+    className: `custom-icon ${isSelected ? 'selected-marker' : ''}`,
     html: `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 21.5C12 21.5 20.5 15.5 20.5 9.5C20.5 4.80558 16.6944 1 12 1C7.30558 1 3.5 4.80558 3.5 9.5C3.5 15.5 12 21.5 12 21.5Z" fill="white" stroke="${color}" stroke-width="2"/>
-        <circle cx="12" cy="9.5" r="3.5" fill="${color}"/>
-      </svg>`,
+      <div style="transform: scale(${scale}); transform-origin: center bottom; position: relative; z-index: ${zIndex};">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+          ${ring}
+          <path d="M12 21.5C12 21.5 20.5 15.5 20.5 9.5C20.5 4.80558 16.6944 1 12 1C7.30558 1 3.5 4.80558 3.5 9.5C3.5 15.5 12 21.5 12 21.5Z" fill="white" stroke="${color}" stroke-width="${strokeWidth}"/>
+          <circle cx="12" cy="9.5" r="3.5" fill="${color}"/>
+        </svg>
+      </div>`,
     iconSize: [24, 24],
     iconAnchor: [12, 24],
     popupAnchor: [0, -24],
@@ -58,7 +66,10 @@ const icons: Record<string, L.DivIcon> = {
   Safe: createCustomIcon('#18A957'),
 };
 
-const getIconForLevel = (level: string) => icons[level] || icons['LOW'];
+const getIconForLevel = (level: string, isSelected: boolean = false) => {
+  if (isSelected) return createCustomIcon(getRiskColor(level), true);
+  return icons[level] || icons['LOW'];
+};
 
 interface GISMapProps {
   filters: any;
@@ -69,18 +80,52 @@ interface GISMapProps {
   loading?: boolean;
 }
 
-const MapUpdater = ({ bounds }: { bounds: L.LatLngBounds | null }) => {
+const MapUpdater = ({ bounds, selectedId, hasSelectedLoc }: { bounds: L.LatLngBounds | null, selectedId: string | null, hasSelectedLoc: boolean }) => {
   const map = useMap();
+  const [hasInit, setHasInit] = useState(false);
   
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize();
-      if (bounds && bounds.isValid()) {
+      if (bounds && bounds.isValid() && !hasInit) {
+        // Only skip fitting bounds if we have a selectedId AND it actually exists in our dataset
+        if (selectedId && hasSelectedLoc) {
+          // Skip fitBounds, let MapSelectionController fly to it
+        } else {
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+        setHasInit(true);
+      } else if (bounds && bounds.isValid() && !selectedId) {
+        // If filters change and we don't have a selection, update bounds
         map.fitBounds(bounds, { padding: [50, 50] });
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [map, bounds]);
+  }, [map, bounds, hasInit, selectedId, hasSelectedLoc]);
+  
+  return null;
+};
+
+const MapSelectionController = ({ selectedId, habitations, sites, markerRefs }: any) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!selectedId) return;
+    
+    const loc = habitations.find((h: any) => h.id === selectedId) || sites.find((s: any) => s.id === selectedId);
+    
+    if (loc && loc.latitude && loc.longitude && !isNaN(loc.latitude) && !isNaN(loc.longitude)) {
+      // Fly to the selected location
+      map.flyTo([loc.latitude, loc.longitude], 15, { animate: true, duration: 1.5 });
+      
+      // Wait for animation and unclustering to finish before opening popup
+      setTimeout(() => {
+         const marker = markerRefs.current.get(selectedId);
+         if (marker && marker.openPopup) {
+           marker.openPopup();
+         }
+      }, 1600);
+    }
+  }, [selectedId, habitations, sites, map, markerRefs]);
   
   return null;
 };
@@ -99,6 +144,7 @@ const MapZoomListener = ({ onZoomChange }: { onZoomChange: (z: number) => void }
 
 export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitations, sites, loading }: GISMapProps) => {
   const [zoomLevel, setZoomLevel] = useState<number>(10);
+  const markerRefs = React.useRef<Map<string, L.Marker>>(new Map());
   
   const mapSeverity = (level: string) => {
     if (level === 'CRITICAL') return 'Critical';
@@ -154,6 +200,9 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
   }, [filteredHabitations]);
 
   const isLowZoom = zoomLevel < 11;
+  const hasSelectedLoc = React.useMemo(() => {
+    return habitations.some(h => h.id === selectedLocationId) || sites.some(s => s.id === selectedLocationId);
+  }, [habitations, sites, selectedLocationId]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full relative z-0 min-h-[400px]">
@@ -172,8 +221,6 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
         </div>
       )}
 
-
-
       {hasData && (
         <MapContainer 
           bounds={bounds} 
@@ -181,7 +228,8 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
           zoomControl={false}
           maxZoom={18}
         >
-          <MapUpdater bounds={bounds} />
+          <MapUpdater bounds={bounds} selectedId={selectedLocationId} hasSelectedLoc={hasSelectedLoc} />
+          <MapSelectionController selectedId={selectedLocationId} habitations={habitations} sites={sites} markerRefs={markerRefs} />
           <MapZoomListener onZoomChange={setZoomLevel} />
           <TileLayer
             url={MAP_CONFIG.tileUrl}
@@ -222,13 +270,18 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
             <MarkerClusterGroup disableClusteringAtZoom={14} maxClusterRadius={60} chunkedLoading={true}>
               {filteredHabitations.map((loc) => {
                 if (!loc.latitude || !loc.longitude || isNaN(loc.latitude) || isNaN(loc.longitude)) return null;
+                const isSelected = loc.id === selectedLocationId;
                 return (
                   <Marker 
                     key={loc.id}
                     position={[loc.latitude, loc.longitude]} 
-                    icon={getIconForLevel(loc.risk_level)}
+                    icon={getIconForLevel(loc.risk_level, isSelected)}
                     eventHandlers={{
                       click: () => onLocationSelect(loc),
+                    }}
+                    ref={(r) => {
+                      if (r) markerRefs.current.set(loc.id, r);
+                      else markerRefs.current.delete(loc.id);
                     }}
                   >
                     <Popup className="custom-popup rounded-xl">
@@ -311,14 +364,19 @@ export const GISMap = ({ filters, onLocationSelect, selectedLocationId, habitati
             // Status-based styling
             const isSafe = site.status.toLowerCase() === 'approved' || site.status.toLowerCase() === 'active';
             const siteColor = isSafe ? '#18A957' : '#E53935'; // Green for approved/active, red for rejected/unsafe
+            const isSelected = site.id === selectedLocationId;
             
             return (
               <Marker 
                 key={site.id}
                 position={[site.latitude, site.longitude]} 
-                icon={createCustomIcon(siteColor)}
+                icon={createCustomIcon(siteColor, isSelected)}
                 eventHandlers={{
                   click: () => onLocationSelect(site),
+                }}
+                ref={(r) => {
+                  if (r) markerRefs.current.set(site.id, r);
+                  else markerRefs.current.delete(site.id);
                 }}
               >
                 <Popup className="custom-popup rounded-xl">

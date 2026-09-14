@@ -58,6 +58,26 @@ def explain_habitation(row: pd.Series) -> str:
 
 def explain_site(row: pd.Series) -> str:
     """Summarise the main site suitability drivers for one candidate."""
+    # Check if the site is marked as unsafe or Avoid tier
+    is_safe = str(row.get("safe", "True")).lower() == "true"
+    site_tier = str(row.get('site_tier', 'Unrated'))
+    
+    if not is_safe or site_tier == "Avoid":
+        weaknesses: list[str] = []
+        if _as_float(row.get("hazard_score", 0)) >= 50:
+            weaknesses.append(f"severe natural hazard exposure (Hazard Score: {_number(row.get('hazard_score'))})")
+        if _as_float(row.get("road_access", 100)) < 50:
+            weaknesses.append("insufficient road accessibility for emergency transport")
+        if _as_float(row.get("healthcare_capacity", 100)) < 30:
+            weaknesses.append("critically low proximity to healthcare infrastructure")
+        if _as_float(row.get("site_safety_score", 100)) < 60:
+            weaknesses.append(f"overall safety score below minimum threshold ({_number(row.get('site_safety_score'))}/100)")
+            
+        if not weaknesses:
+            weaknesses.append("failed mandatory structural or terrain safety inspections")
+            
+        return f"Blocked due to {', '.join(weaknesses[:2])}."
+
     strengths: list[str] = []
     if _as_float(row.get("hazard_score", 100), 100) < 50:
         strengths.append("lower relative hazard")
@@ -69,5 +89,4 @@ def explain_site(row: pd.Series) -> str:
         strengths.append("healthcare capacity")
     if not strengths:
         strengths.append("available capacity factors")
-    tier = str(row.get("site_tier", "Unrated"))
-    return f"{tier} site: {', '.join(strengths[:3])}."
+    return f"{site_tier} site: {', '.join(strengths[:3])}."

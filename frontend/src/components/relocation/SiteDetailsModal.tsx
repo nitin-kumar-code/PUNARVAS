@@ -58,11 +58,11 @@ export const SiteDetailsModal = ({ site, isOpen, onClose, onSelect, isSelected }
               </p>
             </div>
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Distance</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Road Distance</p>
               <p className="text-lg font-bold text-slate-700">{site.distance} <span className="text-xs">km</span></p>
             </div>
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Travel</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Est. Travel Time</p>
               <p className="text-lg font-bold text-slate-700">{site.travelTime} <span className="text-xs">min</span></p>
             </div>
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">

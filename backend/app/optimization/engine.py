@@ -12,6 +12,7 @@ from app.optimization.schemas import (
     OptimizerCandidateSite,
     HazardExposureInfo
 )
+from app.services.routing_service import RoutingService
 
 logger = logging.getLogger(__name__)
 
@@ -101,9 +102,10 @@ class BaselineRelocationEngine:
                 continue
                 
             score = self._calculate_site_score(site)
-            dist = haversine_distance(source.latitude, source.longitude, site.latitude, site.longitude)
+            route_info = RoutingService.get_route(source.latitude, source.longitude, site.latitude, site.longitude)
+            dist = route_info["distance_km"]
             
-            safe_sites.append({"site": site, "score": score, "distance": dist})
+            safe_sites.append({"site": site, "score": score, "distance": dist, "route_info": route_info})
             
         # Deterministic Ranking
         safe_sites.sort(key=lambda x: (x["score"], -x["distance"], str(x["site"].site_id)), reverse=True)
@@ -125,6 +127,8 @@ class BaselineRelocationEngine:
                 population=alloc,
                 percentage=percentage,
                 distance_km=round(item["distance"], 2),
+                travel_time_minutes=item["route_info"]["duration_minutes"],
+                routing_status=item["route_info"]["status"],
                 site_score=round(item["score"], 2)
             ))
             
@@ -181,8 +185,9 @@ class ORToolsRelocationEngine(BaselineRelocationEngine):
                 continue
                 
             score = self._calculate_site_score(site)
-            dist = haversine_distance(source.latitude, source.longitude, site.latitude, site.longitude)
-            safe_sites_raw.append({"site": site, "score": score, "distance": dist})
+            route_info = RoutingService.get_route(source.latitude, source.longitude, site.latitude, site.longitude)
+            dist = route_info["distance_km"]
+            safe_sites_raw.append({"site": site, "score": score, "distance": dist, "route_info": route_info})
 
         if not safe_sites_raw or source.population <= 0:
             status = OptimizerStatus.NO_SAFE_SITE if source.population > 0 else OptimizerStatus.FULLY_COVERED
@@ -255,6 +260,8 @@ class ORToolsRelocationEngine(BaselineRelocationEngine):
                     population=val,
                     percentage=percentage,
                     distance_km=round(item["distance"], 2),
+                    travel_time_minutes=item["route_info"]["duration_minutes"],
+                    routing_status=item["route_info"]["status"],
                     site_score=round(item["score"], 2)
                 ))
                 allocated_pop += val

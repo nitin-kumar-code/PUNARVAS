@@ -74,7 +74,7 @@ export const relocationSites: RelocationSite[] = [
     accessibility: "Good",
     healthcareDistance: 2.1,
     infrastructure: { roads: "Operational", power: "Operational", water: "Warning", comms: "Warning", healthcare: "Available" },
-    reason: "Flood-prone area."
+    reason: "Blocked due to severe natural hazard exposure (Flood Zone) and overall safety score below minimum threshold."
   },
   {
     id: "site-d",

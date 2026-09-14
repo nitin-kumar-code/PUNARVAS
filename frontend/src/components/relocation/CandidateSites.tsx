@@ -8,9 +8,10 @@ interface CandidateSitesProps {
   onSelectSite: (id: string) => void;
   recommendedSiteId?: string;
   onViewDetails: (site: RelocationSite) => void;
+  isPlanGenerated?: boolean;
 }
 
-export const CandidateSites = ({ sites, selectedSites, onSelectSite, recommendedSiteId, onViewDetails }: CandidateSitesProps) => {
+export const CandidateSites = ({ sites, selectedSites, onSelectSite, recommendedSiteId, onViewDetails, isPlanGenerated }: CandidateSitesProps) => {
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-lg font-bold text-punarvas-text mb-1">Candidate Sites</h3>
@@ -21,7 +22,7 @@ export const CandidateSites = ({ sites, selectedSites, onSelectSite, recommended
         
         if (!site.eligible) {
           return (
-            <div key={site.id} className="bg-red-50/30 rounded-xl border border-red-200 p-5 relative overflow-hidden opacity-90 cursor-pointer" onClick={() => onViewDetails(site)}>
+            <div key={site.id} className="bg-red-50/50 rounded-xl border border-red-200 p-5 relative overflow-hidden cursor-not-allowed" onClick={() => onViewDetails(site)}>
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-3">
                   <h4 className="text-lg font-bold text-slate-700">{site.name}</h4>
@@ -31,7 +32,7 @@ export const CandidateSites = ({ sites, selectedSites, onSelectSite, recommended
                   </div>
                 </div>
               </div>
-              <p className="text-sm font-semibold text-punarvas-critical-red mt-2">Reason: {site.reason}</p>
+              <p className="text-sm font-semibold text-punarvas-critical-red mt-2">{site.reason}</p>
             </div>
           );
         }
@@ -76,13 +77,16 @@ export const CandidateSites = ({ sites, selectedSites, onSelectSite, recommended
                 </button>
                 <button 
                   onClick={() => onSelectSite(site.id)}
+                  disabled={isPlanGenerated && !isSelected}
                   className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
                     isSelected 
                       ? 'bg-punarvas-dark-navy text-white hover:bg-slate-800' 
-                      : 'bg-punarvas-primary-blue text-white hover:bg-blue-700'
+                      : isPlanGenerated 
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                        : 'bg-punarvas-primary-blue text-white hover:bg-blue-700'
                   }`}
                 >
-                  {isSelected ? 'Selected' : 'Select Site'}
+                  {isSelected ? 'Selected' : isPlanGenerated ? 'Locked' : 'Select Site'}
                 </button>
               </div>
             </div>
