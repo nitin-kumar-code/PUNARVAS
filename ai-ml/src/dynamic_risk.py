@@ -123,16 +123,16 @@ def calculate_dynamic_risk_single(
     if r_24h >= 80.0 and slope >= 30.0:
         alerts.append("HIGH_LANDSLIDE_SLOPE_INSTABILITY")
 
-    # Situational hazard computation
-    max_hazard_prob = max(flood_prob, landslide_prob)
-    situational_hazard = max_hazard_prob * 100.0
+    # Situational hazard computation (multi-hazard independence assumption)
+    p_any = 1.0 - (1.0 - flood_prob) * (1.0 - landslide_prob)
 
     if has_telemetry:
         rule_hazard = _safe_float(row.get("hazard_component"), 50.0)
         exposure = _safe_float(row.get("exposure_component"), 50.0)
         vuln = _safe_float(row.get("vulnerability_component"), 50.0)
         
-        dyn_hazard = 0.55 * situational_hazard + 0.45 * rule_hazard
+        # Approach A: Gap-Fill (Remaining Capacity Realization)
+        dyn_hazard = rule_hazard + (100.0 - rule_hazard) * p_any
         dyn_risk = round(0.45 * dyn_hazard + 0.30 * exposure + 0.25 * vuln, 2)
     else:
         dyn_risk = base_risk

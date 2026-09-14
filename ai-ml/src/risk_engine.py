@@ -73,16 +73,6 @@ def score_habitations(
         scored["flood_risk"] = preds["flood_risk"]
         scored["landslide_risk"] = preds["landslide_risk"]
         scored["ml_overall_risk"] = preds["overall_risk"]
-
-        if has_telemetry:
-            max_p = np.maximum(
-                scored["flood_probability"],
-                scored["landslide_probability"],
-            )
-            ml_hazard = (max_p * 100.0).round(2)
-        else:
-            # Maintain rule-based hazard as baseline when telemetry is absent
-            ml_hazard = rule_hazard
     except Exception as e:
         logger.warning("ML hazard prediction bypassed (%s). Falling back to rules.", e)
         scored["flood_probability"] = 0.0
@@ -90,20 +80,65 @@ def score_habitations(
         scored["flood_risk"] = "LOW"
         scored["landslide_risk"] = "LOW"
         scored["ml_overall_risk"] = "LOW"
-        ml_hazard = rule_hazard
+
+    # Multi-hazard handling: Probability of at least one event (independence assumption)
+    p_f = np.clip(scored["flood_probability"].fillna(0.0), 0.0, 1.0)
+    p_l = np.clip(scored["landslide_probability"].fillna(0.0), 0.0, 1.0)
+    p_any = 1.0 - ((1.0 - p_f) * (1.0 - p_l))
+
+    def _is_telemetry_valid(row: pd.Series) -> bool:
+        """Verify telemetry exists, is numeric, valid, and fresh."""
+        req = ["rainfall_24h", "river_level", "timestamp"]
+        if not all(c in row.index for c in req):
+            return False
+        if pd.isna(row["rainfall_24h"]) or pd.isna(row["river_level"]):
+            return False
+        try:
+            float(row["rainfall_24h"])
+            float(row["river_level"])
+        except (ValueError, TypeError):
+            return False
+        
+        # Check if probabilities are within valid bounds
+        pf = row.get("flood_probability", 0.0)
+        pl = row.get("landslide_probability", 0.0)
+        if pd.isna(pf) or pd.isna(pl) or pf < 0 or pf > 1 or pl < 0 or pl > 1:
+            return False
+            
+        ts_val = row.get("timestamp")
+        if pd.isna(ts_val):
+            return False
+        try:
+            ts = pd.to_datetime(ts_val)
+            if ts.tz is None:
+                ts = ts.tz_localize("UTC")
+            now = pd.Timestamp.now('UTC')
+            if (now - ts).total_seconds() > 48 * 3600:
+                return False
+        except Exception:
+            return False
+        return True
 
     # 3. Mode Selection
     if effective_mode == "RULE_BASED":
         scored["hazard_component"] = rule_hazard
     elif effective_mode == "ML_BASED":
-        scored["hazard_component"] = ml_hazard
+        # Note: Do not silently misrepresent event probability as static susceptibility.
+        # ML_BASED mode uses the pure probability scaled to 100 for API compatibility.
+        scored["hazard_component"] = (p_any * 100.0).round(2)
     else:  # HYBRID
-        if has_telemetry:
-            scored["hazard_component"] = (
-                ml_weight * ml_hazard + (1.0 - ml_weight) * rule_hazard
-            ).round(2)
-        else:
-            scored["hazard_component"] = rule_hazard
+        valid_mask = scored.apply(_is_telemetry_valid, axis=1)
+        h_static = rule_hazard
+        
+        # Approach A (Remaining Capacity Realization):
+        # If valid live telemetry exists, Hfinal = Hstatic + (100 - Hstatic) * Pany.
+        # Otherwise, fall back to baseline static hazard.
+        h_final = np.where(
+            valid_mask,
+            h_static + (100.0 - h_static) * p_any,
+            h_static
+        )
+        scored["hazard_component"] = pd.Series(h_final, index=scored.index).round(2)
 
     scored["exposure_component"] = exposure_comp
     scored["vulnerability_component"] = vuln_comp
