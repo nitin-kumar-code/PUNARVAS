@@ -51,27 +51,34 @@ class HabitationService:
         self.data_service = json_data_service
 
     def get_all_habitations(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+        import logging
         try:
-            habs = self.data_service.get_all_habitations()
+            from app.services.ml_prediction_service import ml_prediction_service
+            habs = ml_prediction_service.get_all_predictions()
         except Exception as e:
-            import logging
-            logging.getLogger(__name__).error(f"Failed to load habitation data: {e}")
-            return []
+            logging.getLogger(__name__).error(f"Failed to load ML habitation data: {e}")
+            # Fallback to legacy JSON
+            try:
+                habs = self.data_service.get_all_habitations()
+            except Exception as e2:
+                logging.getLogger(__name__).error(f"Failed to load fallback habitation data: {e2}")
+                return []
             
         paginated = habs[skip : skip + limit]
         return [_map_json_to_dict(h) for h in paginated]
 
     def get_habitation_by_id(self, id: uuid.UUID) -> Optional[Dict[str, Any]]:
-        hab = self.data_service.get_habitation_by_id(id)
-        if hab:
-            return _map_json_to_dict(hab)
+        # Fetch all habitations from ML (or fallback) and find by ID
+        habs = self.get_all_habitations(limit=9999)
+        for hab in habs:
+            if hab["id"] == id:
+                return hab
         return None
 
     def get_risk_zones(self, min_risk_level: List[RiskLevel] = [RiskLevel.CRITICAL, RiskLevel.HIGH]) -> List[Dict[str, Any]]:
-        habs = self.data_service.get_all_habitations()
+        habs = self.get_all_habitations(limit=9999)
         results = []
-        for h in habs:
-            mapped = _map_json_to_dict(h)
+        for mapped in habs:
             if mapped["risk_level"] in min_risk_level:
                 results.append({
                     "id": str(mapped["id"]),
@@ -86,11 +93,9 @@ class HabitationService:
         return results
         
     def get_relocation_candidates(self, limit: int = 50) -> List[Dict[str, Any]]:
-        habs = self.data_service.get_all_habitations()
+        habs = self.get_all_habitations(limit=9999)
         candidates = []
-        for h in habs:
-            mapped = _map_json_to_dict(h)
-            
+        for mapped in habs:
             is_critical = mapped["risk_level"] == RiskLevel.CRITICAL
             high_score = mapped["risk_score"] and mapped["risk_score"] >= 85
             

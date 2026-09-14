@@ -10,3 +10,7 @@ httpx
 alembic
 ortools==9.15.6755
 requests
+pandas>=2.0
+matplotlib>=3.7
+pytest>=7.0
+jupyter>=1.0
