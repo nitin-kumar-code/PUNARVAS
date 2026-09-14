@@ -10,9 +10,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Preferred site: lower relative hazard, strong road access, good livelihood access.",
-    "capacity_people": 600,
-    "available_capacity": 600
+    "explanation": "Preferred site: lower relative hazard, strong road access, good livelihood access."
   },
   {
     "site_id": "S002",
@@ -25,9 +23,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Preferred site: lower relative hazard, strong road access, good livelihood access.",
-    "capacity_people": 550,
-    "available_capacity": 550
+    "explanation": "Preferred site: lower relative hazard, strong road access, good livelihood access."
   },
   {
     "site_id": "S003",
@@ -40,9 +36,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: strong road access, good livelihood access, healthcare capacity.",
-    "capacity_people": 550,
-    "available_capacity": 550
+    "explanation": "Preferred site: strong road access, good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S004",
@@ -55,9 +49,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Conditional site: lower relative hazard, strong road access, good livelihood access.",
-    "capacity_people": 225,
-    "available_capacity": 225
+    "explanation": "Conditional site: lower relative hazard, strong road access, good livelihood access."
   },
   {
     "site_id": "S005",
@@ -70,9 +62,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Preferred site: lower relative hazard, good livelihood access, healthcare capacity.",
-    "capacity_people": 525,
-    "available_capacity": 525
+    "explanation": "Preferred site: lower relative hazard, good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S006",
@@ -85,9 +75,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Preferred site: lower relative hazard, strong road access.",
-    "capacity_people": 600,
-    "available_capacity": 600
+    "explanation": "Preferred site: lower relative hazard, strong road access."
   },
   {
     "site_id": "S007",
@@ -100,9 +88,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: strong road access, good livelihood access, healthcare capacity.",
-    "capacity_people": 225,
-    "available_capacity": 225
+    "explanation": "Conditional site: strong road access, good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S008",
@@ -115,9 +101,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Conditional site: lower relative hazard, good livelihood access, healthcare capacity.",
-    "capacity_people": 200,
-    "available_capacity": 200
+    "explanation": "Conditional site: lower relative hazard, good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S009",
@@ -130,9 +114,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: strong road access, good livelihood access, healthcare capacity.",
-    "capacity_people": 600,
-    "available_capacity": 600
+    "explanation": "Preferred site: strong road access, good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S010",
@@ -145,9 +127,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Preferred site: lower relative hazard, good livelihood access, healthcare capacity.",
-    "capacity_people": 500,
-    "available_capacity": 500
+    "explanation": "Preferred site: lower relative hazard, good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S011",
@@ -160,9 +140,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: good livelihood access, healthcare capacity.",
-    "capacity_people": 575,
-    "available_capacity": 575
+    "explanation": "Preferred site: good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S012",
@@ -175,9 +153,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: strong road access.",
-    "capacity_people": 225,
-    "available_capacity": 225
+    "explanation": "Conditional site: strong road access."
   },
   {
     "site_id": "S013",
@@ -190,9 +166,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Preferred site: lower relative hazard, strong road access.",
-    "capacity_people": 575,
-    "available_capacity": 575
+    "explanation": "Preferred site: lower relative hazard, strong road access."
   },
   {
     "site_id": "S014",
@@ -205,9 +179,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: good livelihood access, healthcare capacity.",
-    "capacity_people": 200,
-    "available_capacity": 200
+    "explanation": "Conditional site: good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S015",
@@ -220,9 +192,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Preferred site: lower relative hazard, good livelihood access, healthcare capacity.",
-    "capacity_people": 500,
-    "available_capacity": 500
+    "explanation": "Preferred site: lower relative hazard, good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S016",
@@ -235,9 +205,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: good livelihood access, healthcare capacity.",
-    "capacity_people": 225,
-    "available_capacity": 225
+    "explanation": "Conditional site: good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S017",
@@ -250,9 +218,7 @@
     "site_tier": "Conditional",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Conditional site: good livelihood access, healthcare capacity.",
-    "capacity_people": 225,
-    "available_capacity": 225
+    "explanation": "Conditional site: good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S018",
@@ -265,9 +231,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: strong road access, good livelihood access, healthcare capacity.",
-    "capacity_people": 600,
-    "available_capacity": 600
+    "explanation": "Preferred site: strong road access, good livelihood access, healthcare capacity."
   },
   {
     "site_id": "S019",
@@ -280,9 +244,7 @@
     "site_tier": "Preferred",
     "confidence_score": 100.0,
     "safe": false,
-    "explanation": "Preferred site: strong road access.",
-    "capacity_people": 575,
-    "available_capacity": 575
+    "explanation": "Preferred site: strong road access."
   },
   {
     "site_id": "S020",
@@ -295,8 +257,6 @@
     "site_tier": "Avoid",
     "confidence_score": 100.0,
     "safe": true,
-    "explanation": "Avoid site: lower relative hazard.",
-    "capacity_people": 75,
-    "available_capacity": 75
+    "explanation": "Avoid site: lower relative hazard."
   }
 ]

@@ -626,7 +626,7 @@
     "vulnerability_component": 14.6,
     "risk_score": 37.11,
     "triage_level": "Low",
-    "confidence_score": 85.7,
+    "confidence_score": 83.3,
     "explanation": "Key drivers: steep terrain (33.7\u00b0), repeated recorded hazard events. Maintain standard monitoring and refresh data annually."
   },
   {
@@ -4451,7 +4451,7 @@
     "vulnerability_component": 7.63,
     "risk_score": 14.01,
     "triage_level": "Low",
-    "confidence_score": 85.7,
+    "confidence_score": 83.3,
     "explanation": "Key drivers: repeated recorded hazard events. Maintain standard monitoring and refresh data annually."
   },
   {
@@ -6371,7 +6371,7 @@
     "vulnerability_component": 11.81,
     "risk_score": 41.74,
     "triage_level": "Moderate",
-    "confidence_score": 85.7,
+    "confidence_score": 83.3,
     "explanation": "Key drivers: repeated recorded hazard events. Monitor seasonal triggers and include in routine resilience planning."
   },
   {
@@ -6386,7 +6386,7 @@
     "vulnerability_component": 16.0,
     "risk_score": 19.23,
     "triage_level": "Low",
-    "confidence_score": 85.7,
+    "confidence_score": 83.3,
     "explanation": "Key drivers: repeated recorded hazard events. Maintain standard monitoring and refresh data annually."
   },
   {
@@ -6626,7 +6626,7 @@
     "vulnerability_component": 15.25,
     "risk_score": 36.62,
     "triage_level": "Low",
-    "confidence_score": 85.7,
+    "confidence_score": 83.3,
     "explanation": "Key drivers: high composite hazard (61.3), steep terrain (46.0\u00b0), repeated recorded hazard events. Maintain standard monitoring and refresh data annually."
   },
   {
@@ -7166,7 +7166,7 @@
     "vulnerability_component": 13.89,
     "risk_score": 53.16,
     "triage_level": "High",
-    "confidence_score": 85.7,
+    "confidence_score": 83.3,
     "explanation": "Key drivers: high composite hazard (67.4), steep terrain (37.0\u00b0), repeated recorded hazard events. Prioritise detailed assessment and mitigation planning in the next review cycle."
   },
   {

@@ -21,7 +21,8 @@ def test_hazard_score_increases_with_landslide_and_flood_risk() -> None:
         }
     )
     scores = calculate_hazard_score(frame)
-    assert scores.iloc[1] > scores.iloc[0]
+    scores_list = list(scores)
+    assert scores_list[1] > scores_list[0]
     assert scores.between(0, 100).all()
 
 
@@ -41,38 +42,54 @@ def test_higher_hazard_reduces_site_safety() -> None:
         "livelihood_access": [80, 80],
     }
     sites = pd.DataFrame({**common, "hazard_score": [20, 80]})
-    scored = score_candidate_sites(sites)
-    assert scored.loc[0, "site_safety_score"] > scored.loc[1, "site_safety_score"]
+    scores = score_candidate_sites(sites)
+    safety_scores = list(scores["site_safety_score"])
+    assert safety_scores[0] > safety_scores[1]
 
 
 def test_site_capacity_score_does_not_depend_on_shortlist_membership() -> None:
     site = pd.DataFrame(
         {
-            "hazard_score": [40], "land_capacity": [2_000], "water_capacity": [600],
-            "power_capacity": [600], "healthcare_capacity": [50], "school_capacity": [150],
-            "road_access": [80], "livelihood_access": [80],
+            "hazard_score": [40],
+            "land_capacity": [2_000],
+            "water_capacity": [600],
+            "power_capacity": [600],
+            "healthcare_capacity": [50],
+            "school_capacity": [150],
+            "road_access": [80],
+            "livelihood_access": [80],
         }
     )
-    isolated_score = score_candidate_sites(site).loc[0, "site_safety_score"]
-    compared_score = score_candidate_sites(pd.concat([site, site], ignore_index=True)).loc[0, "site_safety_score"]
-    assert isolated_score == compared_score
+    isolated_scores = list(score_candidate_sites(site)["site_safety_score"])
+    doubled = pd.concat([site, site], ignore_index=True)
+    compared_scores = list(score_candidate_sites(doubled)["site_safety_score"])
+    assert isolated_scores[0] == compared_scores[0]
 
 
 def test_habitation_output_contains_explanation_and_confidence() -> None:
     habitations = pd.DataFrame(
         {
-            "population": [150], "population_density_per_km2": [600], "children_0_6": [18],
-            "landslide_score": [70], "flood_score": [60], "historical_landslide_count": [2],
-            "historical_flood_count": [1], "slope_degree": [35], "temporary_house_pct": [20],
-            "dilapidated_house_pct": [20], "hospital_distance_km": [8],
+            "population": [150],
+            "population_density_per_km2": [600],
+            "children_0_6": [18],
+            "landslide_score": [70],
+            "flood_score": [60],
+            "historical_landslide_count": [2],
+            "historical_flood_count": [1],
+            "slope_degree": [35],
+            "temporary_house_pct": [20],
+            "dilapidated_house_pct": [20],
+            "hospital_distance_km": [8],
             "healthcare_capacity_est": [10],
         }
     )
     scored = score_habitations(habitations)
-    assert 0 <= scored.loc[0, "risk_score"] <= 100
-    assert 50 <= scored.loc[0, "confidence_score"] <= 100
-    assert "Key drivers:" in scored.loc[0, "explanation"]
-    assert "high composite hazard" in scored.loc[0, "explanation"]
+    row = dict(scored.iloc[0])
+    assert 0 <= row["risk_score"] <= 100
+    assert 50 <= row["confidence_score"] <= 100
+    explanation = str(row["explanation"])
+    assert "Key drivers:" in explanation
+    assert "high composite hazard" in explanation
 
 
 def test_schema_validation_names_missing_columns() -> None:
