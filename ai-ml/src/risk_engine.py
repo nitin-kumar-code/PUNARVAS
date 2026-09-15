@@ -81,64 +81,50 @@ def score_habitations(
         scored["landslide_risk"] = "LOW"
         scored["ml_overall_risk"] = "LOW"
 
-    # Multi-hazard handling: Probability of at least one event (independence assumption)
-    p_f = np.clip(scored["flood_probability"].fillna(0.0), 0.0, 1.0)
-    p_l = np.clip(scored["landslide_probability"].fillna(0.0), 0.0, 1.0)
-    p_any = 1.0 - ((1.0 - p_f) * (1.0 - p_l))
+    from .dynamic_math import compute_dynamic_hazard, evaluate_telemetry_state
 
-    def _is_telemetry_valid(row: pd.Series) -> bool:
-        """Verify telemetry exists, is numeric, valid, and fresh."""
+    def _apply_dynamic_hazard(row: pd.Series) -> pd.Series:
+        # Check required features for live telemetry
         req = ["rainfall_24h", "river_level", "timestamp"]
         if not all(c in row.index for c in req):
-            return False
-        if pd.isna(row["rainfall_24h"]) or pd.isna(row["river_level"]):
-            return False
-        try:
-            float(row["rainfall_24h"])
-            float(row["river_level"])
-        except (ValueError, TypeError):
-            return False
+            state = "MISSING"
+        elif pd.isna(row["rainfall_24h"]) or pd.isna(row["river_level"]):
+            state = "INVALID"
+        else:
+            try:
+                float(row["rainfall_24h"])
+                float(row["river_level"])
+                state = evaluate_telemetry_state(row.get("timestamp"))
+            except (ValueError, TypeError):
+                state = "INVALID"
         
-        # Check if probabilities are within valid bounds
         pf = row.get("flood_probability", 0.0)
         pl = row.get("landslide_probability", 0.0)
-        if pd.isna(pf) or pd.isna(pl) or pf < 0 or pf > 1 or pl < 0 or pl > 1:
-            return False
-            
-        ts_val = row.get("timestamp")
-        if pd.isna(ts_val):
-            return False
-        try:
-            ts = pd.to_datetime(ts_val)
-            if ts.tz is None:
-                ts = ts.tz_localize("UTC")
-            now = pd.Timestamp.now('UTC')
-            if (now - ts).total_seconds() > 48 * 3600:
-                return False
-        except Exception:
-            return False
-        return True
+        h_stat = row.get("_rule_hazard_internal", 0.0)
+        
+        h_fin, p_any = compute_dynamic_hazard(h_stat, pf, pl, state)
+        return pd.Series({"hazard_component": h_fin, "p_any": p_any, "telemetry_state": state})
 
     # 3. Mode Selection
     if effective_mode == "RULE_BASED":
         scored["hazard_component"] = rule_hazard
+        scored["telemetry_state"] = "IGNORED"
+        scored["p_any"] = p_any
     elif effective_mode == "ML_BASED":
         # Note: Do not silently misrepresent event probability as static susceptibility.
-        # ML_BASED mode uses the pure probability scaled to 100 for API compatibility.
+        p_f = np.clip(scored["flood_probability"].fillna(0.0), 0.0, 1.0)
+        p_l = np.clip(scored["landslide_probability"].fillna(0.0), 0.0, 1.0)
+        p_any = 1.0 - ((1.0 - p_f) * (1.0 - p_l))
         scored["hazard_component"] = (p_any * 100.0).round(2)
+        scored["telemetry_state"] = "IGNORED"
+        scored["p_any"] = p_any
     else:  # HYBRID
-        valid_mask = scored.apply(_is_telemetry_valid, axis=1)
-        h_static = rule_hazard
-        
-        # Approach A (Remaining Capacity Realization):
-        # If valid live telemetry exists, Hfinal = Hstatic + (100 - Hstatic) * Pany.
-        # Otherwise, fall back to baseline static hazard.
-        h_final = np.where(
-            valid_mask,
-            h_static + (100.0 - h_static) * p_any,
-            h_static
-        )
-        scored["hazard_component"] = pd.Series(h_final, index=scored.index).round(2)
+        scored["_rule_hazard_internal"] = rule_hazard
+        res = scored.apply(_apply_dynamic_hazard, axis=1)
+        scored["hazard_component"] = res["hazard_component"]
+        scored["telemetry_state"] = res["telemetry_state"]
+        scored["p_any"] = res["p_any"]
+        scored.drop(columns=["_rule_hazard_internal"], inplace=True)
 
     scored["exposure_component"] = exposure_comp
     scored["vulnerability_component"] = vuln_comp

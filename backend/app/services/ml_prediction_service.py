@@ -108,6 +108,17 @@ class MLPredictionService:
             confidence = float(row.get("confidence_score", 0))
             explanation = str(row.get("explanation", ""))
             
+            # Additional frontend explainability fields
+            telemetry_state = str(row.get("telemetry_state", "MISSING"))
+            p_any = float(row.get("p_any", 0.0))
+            
+            # Determine base static hazard. Since we don't have it directly in the 
+            # dataframe, we know if telemetry is missing, hazard_comp == static_hazard.
+            # If we need it exact, we can recalculate it here, but it's cleaner to 
+            # just rely on the API payload extending as needed.
+            # Let's extract static hazard logic if possible.
+            # (risk_engine.py didn't export it, but we can do a quick check)
+            
             rec = {
                 "id": deterministic_id,
                 "habitation_id": hab_id,
@@ -124,6 +135,10 @@ class MLPredictionService:
                 "hazard_component": round(hazard_comp, 2),
                 "exposure_component": round(exposure_comp, 2),
                 "vulnerability_component": round(vuln_comp, 2),
+                "flood_probability": flood_prob,
+                "landslide_probability": landslide_prob,
+                "combined_dynamic_probability": p_any,
+                "telemetry_state": telemetry_state,
                 "vulnerable_population": int(row.get("population", 0) * 0.3),
                 "hazards": {
                     "Flood": float(round(flood_prob * 100, 2)),
