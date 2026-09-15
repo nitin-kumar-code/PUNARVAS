@@ -19,6 +19,16 @@ if settings.FRONTEND_URL:
         allow_headers=["*"],
     )
 
+from app.core.scheduler import start_scheduler, shutdown_scheduler
+
+@app.on_event("startup")
+def startup_event():
+    start_scheduler()
+
+@app.on_event("shutdown")
+def shutdown_event():
+    shutdown_scheduler()
+
 @app.get("/")
 def read_root():
     return {

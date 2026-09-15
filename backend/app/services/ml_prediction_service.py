@@ -150,4 +150,46 @@ class MLPredictionService:
         self._batch_cache = records
         return records
 
+    def update_cache_with_dataframe(self, scored_df):
+        """Update the API cache directly from a scored dataframe (used by scheduler)."""
+        import uuid
+        HABITATION_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+        records = []
+        for idx, row in scored_df.iterrows():
+            hab_id = str(idx)
+            deterministic_id = uuid.uuid5(HABITATION_NAMESPACE, hab_id)
+            flood_prob = float(row.get("flood_probability", 0))
+            landslide_prob = float(row.get("landslide_probability", 0))
+            p_any = float(row.get("p_any", 0.0))
+            
+            rec = {
+                "id": deterministic_id,
+                "habitation_id": hab_id,
+                "village_name": str(row.get("village_name", "Unknown")),
+                "latitude": float(row.get("latitude", 0)),
+                "longitude": float(row.get("longitude", 0)),
+                "population": int(row.get("population", 0)),
+                "sub_district": str(row.get("sub_district", "Unknown")),
+                "triage_level": str(row.get("triage_level", "Low")),
+                "risk_score": round(float(row.get("risk_score", 0)), 2),
+                "confidence_score": round(float(row.get("confidence_score", 0)), 1),
+                "explanation": str(row.get("explanation", "")),
+                "updated_at": "2024-10-24T12:00:00Z",
+                "hazard_component": round(float(row.get("hazard_component", 0)), 2),
+                "exposure_component": round(float(row.get("exposure_component", 0)), 2),
+                "vulnerability_component": round(float(row.get("vulnerability_component", 0)), 2),
+                "flood_probability": flood_prob,
+                "landslide_probability": landslide_prob,
+                "combined_dynamic_probability": p_any,
+                "telemetry_state": str(row.get("telemetry_state", "MISSING")),
+                "vulnerable_population": int(row.get("population", 0) * 0.3),
+                "hazards": {
+                    "Flood": float(round(flood_prob * 100, 2)),
+                    "Landslide": float(round(landslide_prob * 100, 2))
+                }
+            }
+            records.append(rec)
+        self._batch_cache = records
+        return records
+
 ml_prediction_service = MLPredictionService()

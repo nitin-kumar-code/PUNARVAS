@@ -78,6 +78,15 @@ def get_ml_risk_prediction(habitation_id: str, simulate: bool = False, sim_rainf
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/system/inference-status")
+def get_live_inference_status():
+    if hasattr(ml_prediction_service, 'last_inference_state') and ml_prediction_service.last_inference_state:
+        return ml_prediction_service.last_inference_state
+    return {
+        "status": "No inference cycle run yet",
+        "telemetry_status": "PENDING"
+    }
+
 @router.post("/decisions/generate", response_model=DecisionReceiptSchema)
 def generate_decision(request: DecisionGenerateRequest, db: Session = Depends(get_db)):
     service = DecisionService(db)
