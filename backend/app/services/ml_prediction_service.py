@@ -4,6 +4,7 @@ import logging
 import uuid
 import pandas as pd
 from typing import Dict, Any, List
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,15 @@ class MLPredictionService:
             # Let's extract static hazard logic if possible.
             # (risk_engine.py didn't export it, but we can do a quick check)
             
+            # VULNERABILITY DEMOGRAPHICS NOTE:
+            # The vulnerable_population metric is currently a planning estimate,
+            # NOT a measured demographic census value. It assumes a fixed 30% ratio
+            # of total population until measured data is integrated.
+            ESTIMATED_VULNERABLE_POP_RATIO = 0.3
+            
+            # The updated_at field reflects the actual inference or cache initialization timestamp
+            current_timestamp = datetime.now(timezone.utc).isoformat()
+            
             rec = {
                 "id": deterministic_id,
                 "habitation_id": hab_id,
@@ -131,7 +141,7 @@ class MLPredictionService:
                 "risk_score": round(risk_score, 2),
                 "confidence_score": round(confidence, 1),
                 "explanation": explanation,
-                "updated_at": "2024-10-24T12:00:00Z",
+                "updated_at": current_timestamp,
                 "hazard_component": round(hazard_comp, 2),
                 "exposure_component": round(exposure_comp, 2),
                 "vulnerability_component": round(vuln_comp, 2),
@@ -139,11 +149,12 @@ class MLPredictionService:
                 "landslide_probability": landslide_prob,
                 "combined_dynamic_probability": p_any,
                 "telemetry_state": telemetry_state,
-                "vulnerable_population": int(row.get("population", 0) * 0.3),
+                "vulnerable_population": int(row.get("population", 0) * ESTIMATED_VULNERABLE_POP_RATIO),
                 "hazards": {
                     "Flood": float(round(flood_prob * 100, 2)),
                     "Landslide": float(round(landslide_prob * 100, 2))
-                }
+                },
+                "risk_at_last_plan": float(row.get("risk_at_last_plan", risk_score)),
             }
             records.append(rec)
             
@@ -162,6 +173,9 @@ class MLPredictionService:
             landslide_prob = float(row.get("landslide_probability", 0))
             p_any = float(row.get("p_any", 0.0))
             
+            ESTIMATED_VULNERABLE_POP_RATIO = 0.3
+            current_timestamp = datetime.now(timezone.utc).isoformat()
+            
             rec = {
                 "id": deterministic_id,
                 "habitation_id": hab_id,
@@ -174,7 +188,7 @@ class MLPredictionService:
                 "risk_score": round(float(row.get("risk_score", 0)), 2),
                 "confidence_score": round(float(row.get("confidence_score", 0)), 1),
                 "explanation": str(row.get("explanation", "")),
-                "updated_at": "2024-10-24T12:00:00Z",
+                "updated_at": current_timestamp,
                 "hazard_component": round(float(row.get("hazard_component", 0)), 2),
                 "exposure_component": round(float(row.get("exposure_component", 0)), 2),
                 "vulnerability_component": round(float(row.get("vulnerability_component", 0)), 2),
@@ -182,11 +196,12 @@ class MLPredictionService:
                 "landslide_probability": landslide_prob,
                 "combined_dynamic_probability": p_any,
                 "telemetry_state": str(row.get("telemetry_state", "MISSING")),
-                "vulnerable_population": int(row.get("population", 0) * 0.3),
+                "vulnerable_population": int(row.get("population", 0) * ESTIMATED_VULNERABLE_POP_RATIO),
                 "hazards": {
                     "Flood": float(round(flood_prob * 100, 2)),
                     "Landslide": float(round(landslide_prob * 100, 2))
-                }
+                },
+                "risk_at_last_plan": float(row.get("risk_at_last_plan", float(row.get("risk_score", 0)))),
             }
             records.append(rec)
         self._batch_cache = records

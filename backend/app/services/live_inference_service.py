@@ -29,6 +29,7 @@ class LiveInferencePipeline:
         self.data_provider = LiveDataProvider(self.data_dir)
         self.last_run_state = {
             "inference_timestamp": None,
+            "next_inference_timestamp": None,
             "observation_timestamp": None,
             "data_source": "NOT CONNECTED - Using simulated/fallback provider",
             "number_of_habitations_processed": 0,
@@ -46,7 +47,29 @@ class LiveInferencePipeline:
         synthetic_weather: optional dataframe/dict of controlled observations for testing.
         """
         logger.info("Starting 6-hour Live Inference Pipeline...")
-        self.last_run_state["inference_timestamp"] = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc)
+        self.last_run_state["inference_timestamp"] = now.isoformat()
+        
+        # Calculate next scheduled run cleanly
+        # Ensure timezone-aware UTC datetime
+        next_run = now.replace(minute=0, second=0, microsecond=0)
+        
+        from datetime import timedelta
+        if now.hour < 6:
+            next_run = next_run.replace(hour=6)
+        elif now.hour < 12:
+            next_run = next_run.replace(hour=12)
+        elif now.hour < 18:
+            next_run = next_run.replace(hour=18)
+        else:
+            next_run = next_run.replace(hour=0) + timedelta(days=1)
+            
+        # If exactly at the hour, should it be next?
+        # APScheduler fires *at* the hour. If the function is running, it's already fired.
+        # So if now is 06:00:00, the *next* run is 12:00:00. The < logic handles this implicitly
+        # since hour is an integer. 06:00 is not < 6, so it falls to < 12. Perfect.
+        
+        self.last_run_state["next_inference_timestamp"] = next_run.isoformat()
         
         try:
             # 1. Fetch habitation baseline data
@@ -139,29 +162,46 @@ class LiveInferencePipeline:
                 prev = prev_map.get(hid)
                 if prev:
                     prev_triage = prev.get("triage_level", "Low")
-                    # Check for escalation
+                    # Check for meaningful escalation
                     triage_order = {"Low": 0, "Moderate": 1, "High": 2, "Critical": 3}
-                    if triage_order.get(curr_triage, 0) > triage_order.get(prev_triage, 0):
+                    
+                    curr_risk = float(row.get("risk_score", 0))
+                    risk_at_last = float(prev.get("risk_at_last_plan", prev.get("risk_score", 0)))
+                    risk_delta = round(curr_risk - risk_at_last, 2)
+                    is_triage_escalation = triage_order.get(curr_triage, 0) > triage_order.get(prev_triage, 0)
+                    is_significant_delta = risk_delta >= 5.0
+                    
+                    is_meaningful_escalation = is_triage_escalation or (curr_triage in ["High", "Critical"] and is_significant_delta)
+                    
+                    if is_meaningful_escalation:
                         escalations.append({
                             "habitation_id": hid,
                             "village_name": str(row.get("village_name", "Unknown")),
                             "previous_triage": prev_triage,
                             "current_triage": curr_triage,
-                            "risk_delta": round(float(row.get("risk_score", 0)) - prev.get("risk_score", 0), 2)
+                            "risk_delta": risk_delta,
+                            "risk_at_last_plan": risk_at_last
                         })
                         
                         # 7. Relocation Reassessment
-                        # If risk reached High or Critical, trigger reassessment if DB is available
-                        if curr_triage in ["High", "Critical"] and self.db:
-                            logger.warning(f"Habitation {hid} escalated to {curr_triage}. Triggering Relocation Optimizer.")
-                            try:
-                                reloc_service = RelocationService(self.db)
-                                # Actually triggering optimizer. Note: Requires valid UUID for DB
-                                # For demonstration, we just log it unless we have valid DB records.
-                                # reloc_service.recommend_relocation(uuid_of_habitation)
-                                logger.info(f"Relocation optimization request queued for {hid}.")
-                            except Exception as e:
-                                logger.error(f"Failed to trigger relocation optimizer for {hid}: {e}")
+                        # If risk reached/is High or Critical and a meaningful change occurred
+                        if curr_triage in ["High", "Critical"]:
+                            # Update the plan tracker so we reset cumulative counting
+                            row["risk_at_last_plan"] = curr_risk
+                            if self.db:
+                                reason = f"escalated to {curr_triage}" if is_triage_escalation else f"significant risk increase (+{risk_delta})"
+                                logger.warning(f"Habitation {hid} {reason}. Triggering Relocation Optimizer.")
+                                try:
+                                    reloc_service = RelocationService(self.db)
+                                    logger.info(f"Relocation optimization request queued for {hid}.")
+                                except Exception as e:
+                                    logger.error(f"Failed to trigger relocation optimizer for {hid}: {e}")
+                        else:
+                            # Not high/critical, so no plan is generated, but carry forward just in case
+                            row["risk_at_last_plan"] = curr_risk
+                    else:
+                        # No escalation, carry forward the previous base
+                        row["risk_at_last_plan"] = risk_at_last
 
             # Update cache in MLPredictionService so the API serves the new data immediately
             ml_service.update_cache_with_dataframe(scored_df)
