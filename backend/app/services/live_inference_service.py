@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(os.path.abspath(__file__)).parent.parent.parent.parent
 if str(PROJECT_ROOT / "ai-ml") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "ai-ml"))
 
-from src.live_data import LiveDataProvider
+from app.services.providers.external_data_service import ExternalDataService
 from src.predict import _enrich_habitations_with_features
 from src.risk_engine import score_habitations
 from src.dynamic_math import evaluate_telemetry_state
@@ -26,7 +26,7 @@ class LiveInferencePipeline:
         self.db = db_session
         self.data_dir = str(PROJECT_ROOT / "ai-ml" / "data")
         # Real APIs are not connected. We use the provider that falls back to historical/synthetic data.
-        self.data_provider = LiveDataProvider(self.data_dir)
+        self.data_provider = ExternalDataService(self.data_dir)
         self.last_run_state = {
             "inference_timestamp": None,
             "next_inference_timestamp": None,
@@ -81,38 +81,29 @@ class LiveInferencePipeline:
             self.last_run_state["number_of_habitations_processed"] = total_habs
             
             # 2. Live Data Ingestion
-            # In a real system, we'd fetch live data for all locations here.
-            # Currently NOT CONNECTED to real IMD/CWC.
-            logger.info("Live data API NOT CONNECTED. Fetching via provider interface.")
-            weather_updates = []
+            logger.info("Fetching normalized observations via ExternalDataService.")
+            
+            # Update health status safely
+            health = self.data_provider.get_provider_health()
+            logger.info(f"External Data Mode: {health['Mode']}")
             
             if synthetic_weather is not None:
-                # Use provided synthetic data (for testing end-to-end)
                 if isinstance(synthetic_weather, pd.DataFrame):
                     hab_updates = synthetic_weather
                 else:
                     hab_updates = pd.DataFrame.from_dict(synthetic_weather, orient='index')
                     hab_updates.index.name = 'habitation_id'
             else:
-                # Try to fetch from provider for each habitation.
-                # (Warning: this might be slow for 1170 records if unoptimized, 
-                # but LiveDataProvider in prototype is just pandas filtering)
-                latest_obs_time = None
-                for hid, row in hab_df.iterrows():
-                    obs = self.data_provider.fetch_latest_observation(
-                        latitude=row.get('latitude', 0.0),
-                        longitude=row.get('longitude', 0.0)
-                    )
-                    obs_dict = obs.to_dict()
-                    obs_dict['habitation_id'] = hid
-                    weather_updates.append(obs_dict)
+                hab_updates = self.data_provider.fetch_normalized_observations(hab_df)
+                
+                # Find the most recent observation timestamp if available
+                if "timestamp" in hab_updates.columns and not hab_updates["timestamp"].isna().all():
+                    latest_obs_time = hab_updates["timestamp"].dropna().max()
+                    self.last_run_state["observation_timestamp"] = str(latest_obs_time)
+                else:
+                    self.last_run_state["observation_timestamp"] = None
                     
-                    if latest_obs_time is None or obs.timestamp > latest_obs_time:
-                        latest_obs_time = obs.timestamp
-                        
-                hab_updates = pd.DataFrame(weather_updates).set_index('habitation_id')
-                if latest_obs_time:
-                    self.last_run_state["observation_timestamp"] = latest_obs_time
+            self.last_run_state["provider_health"] = health
 
             # 3. Data Validation + Feature Engineering
             # We enrich the base habitations with the live observations
@@ -121,9 +112,12 @@ class LiveInferencePipeline:
                 enriched_df = enriched_df.set_index('habitation_id')
             
             # Overlay the live/synthetic weather updates over the baseline features
+            # We explicitly assign rather than use .update() because .update() ignores NAs.
+            # If a live provider fails and returns NA, we MUST NOT let historical data 
+            # masquerade as fresh live data. We must overwrite it with NA so telemetry becomes INVALID.
             for col in hab_updates.columns:
                 if col in enriched_df.columns:
-                    enriched_df.update(hab_updates[[col]])
+                    enriched_df[col] = hab_updates[col]
                 else:
                     enriched_df = enriched_df.join(hab_updates[[col]])
 
