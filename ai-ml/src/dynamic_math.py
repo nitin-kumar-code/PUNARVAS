@@ -6,7 +6,7 @@ import numpy as np
 TELEMETRY_EXPECTED_INTERVAL_HOURS = 6.0
 TELEMETRY_MAX_AGE_HOURS = 48.0
 
-def evaluate_telemetry_state(timestamp_val) -> str:
+def evaluate_telemetry_state(timestamp_val, reference_now=None) -> str:
     """
     Evaluate the freshness state of a telemetry timestamp.
     Returns one of: 'MISSING', 'INVALID', 'FRESH', 'STALE', 'EXPIRED'
@@ -22,7 +22,14 @@ def evaluate_telemetry_state(timestamp_val) -> str:
         ts = pd.to_datetime(timestamp_val)
         if ts.tz is None:
             ts = ts.tz_localize("UTC")
-        now = pd.Timestamp.now('UTC')
+            
+        if reference_now is not None:
+            now = pd.to_datetime(reference_now)
+            if now.tz is None:
+                now = now.tz_localize("UTC")
+        else:
+            now = pd.Timestamp.now('UTC')
+            
         age_hours = (now - ts).total_seconds() / 3600.0
         
         if age_hours < 0:

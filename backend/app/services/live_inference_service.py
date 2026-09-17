@@ -129,7 +129,11 @@ class LiveInferencePipeline:
 
             # 4. & 5. ML Inference & Dynamic Risk Calculation
             # score_habitations internally validates telemetry freshness and applies Approach A
-            scored_df = score_habitations(enriched_df, mode="HYBRID")
+            scored_df = score_habitations(
+                enriched_df, 
+                mode="HYBRID", 
+                reference_now=self.last_run_state["inference_timestamp"]
+            )
             
             # 6. Update Risk State and Check Escalations
             successful = 0

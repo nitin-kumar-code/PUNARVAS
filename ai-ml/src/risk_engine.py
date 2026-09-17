@@ -40,6 +40,7 @@ def score_habitations(
     habitations: pd.DataFrame,
     mode: Optional[str] = None,
     ml_weight: float = 0.55,
+    reference_now: Optional[str] = None,
 ) -> pd.DataFrame:
     """Score habitations using RULE_BASED, ML_BASED, or HYBRID mode.
 
@@ -50,6 +51,7 @@ def score_habitations(
       If dynamic telemetry is absent, defaults to physical hazard baseline.
     """
     from .predict import predict_hazards_batch
+    from .dynamic_math import compute_dynamic_hazard, evaluate_telemetry_state
 
     scored = habitations.copy()
 
@@ -94,7 +96,7 @@ def score_habitations(
             try:
                 float(row["rainfall_24h"])
                 float(row["river_level"])
-                state = evaluate_telemetry_state(row.get("timestamp"))
+                state = evaluate_telemetry_state(row.get("timestamp"), reference_now=reference_now)
             except (ValueError, TypeError):
                 state = "INVALID"
         
